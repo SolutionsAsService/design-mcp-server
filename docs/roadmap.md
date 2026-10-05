@@ -92,4 +92,4 @@ for the generic CAD development gates here. Do not mistake roadmap text for expo
 - FreeCAD 1.1.4 is installed on D:, but its adapter still needs an approved live test on actual STEP and FCStd files.
 - STEP shape summaries are implemented; native feature trees, material, physical mass properties, and CAD modification are not available.
 - No verified drone project/component dataset is bundled; the tools must not fabricate example manufacturer specifications.
-- End-to-end CAD edit/render/inspect/rollback is a future acceptance gate, not a current capability. New-box creation is unit-tested but requires a live FreeCAD test.
+- End-to-end CAD edit/render/inspect/rollback is a future acceptance gate, not a current capability. New-box creation/reinspection passed a live generic FreeCAD fixture test on 2026-10-05; source-copy edits and visual rendering remain unproven.

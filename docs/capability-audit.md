@@ -1,6 +1,6 @@
 # Capability audit — 2026-10-05
 
-Baseline: `3b411e9` on `main`; canonical checkout `E:\design-mcp-server`. This is an
+Audited baseline: `3b411e9` on `main`; canonical checkout `E:\design-mcp-server`. This is an
 implementation audit, not an assertion that any particular vehicle design is validated.
 
 | Area | What exists | Evidence / limitation |
@@ -30,11 +30,17 @@ implementation audit, not an assertion that any particular vehicle design is val
 
 The broader architecture, prospective capabilities, and dependencies are in `roadmap.md`. They are not exported MCP tools until implemented and verified.
 
+## Phase 1 evidence (2026-10-05)
+
+- `create_box_revision(2, 3, 4)` ran through FreeCAD 1.1.4 bundled Python on D: and saved a new FCStd document plus a SHA-256 manifest under `E:\design-mcp-server\.tmp\revisions`.
+- `inspect_revision` verified the artifact hash and reopened the saved document: one valid, closed `Part::Box`, bounds 2 × 3 × 4 mm, volume approximately 24 mm³, and centroid (1, 1.5, 2) mm.
+- 19 unit tests pass on the E: Windows checkout. This verifies generic box creation and reinspection, **not** rendering, parameter edits, assemblies, manufacturing suitability, or the earlier distance tool's real-file behavior.
+
 ## Tool and resource inventory for the next gates
 
 | Priority | Proposed MCP interface | Dependency | Gate |
 | --- | --- | --- | --- |
-| Current increment | `create_box_revision`, `inspect_cad_revision` | Separate revision root and D: FreeCAD Python | Generated FCStd reopens and matches dimensions; hash checked |
+| Implemented | `create_box_revision`, `inspect_cad_revision` | Separate revision root and D: FreeCAD Python | Generic 2 × 3 × 4 mm FCStd created and reopened; hash checked |
 | Next | `revise_box_parameters`, `compare_cad_revisions` | Verified current writer | Original unchanged; before/after dimensions and hashes recorded |
 | Next | `render_cad_revision`, `design://project/revisions` | Proven headless renderer and bounded image output | Image can be independently inspected and tied to revision hash |
 | Later | `inspect_kicad_project`, `design://project/electronics` | KiCad CLI version/API discovery | Read-only fixture, ERC/DRC evidence, source revision recorded |
