@@ -20,8 +20,9 @@ record hash covers the forwarded payload, **not** its authenticity.
 ## Guarded handoff
 
 1. Query pcbparts for a specific part and KiCad library search for a footprint
-   without ordering or editing anything. Record the complete selected output,
-   tool name and observation time outside conversation as needed.
+   without ordering or editing anything. Forward the selected output or a
+   clearly identified subset; retain the tool name and observation time
+   outside conversation as needed. A subset is not a complete source record.
 2. Pass the selected `jlc_get_part` result and one KiCad footprint-search result
    to `register_component_candidate`. It stores the forwarded packets and
    normalized identifiers under the opt-in revision root. Inspect the record
