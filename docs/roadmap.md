@@ -72,7 +72,8 @@ for the generic CAD development gates here. Do not mistake roadmap text for expo
 4. Continue from the copy-on-write box edit and dimension comparison with preview,
    visual inspection and broader rollback; never mutate the source by default. Current edits
    reopen geometry but do not render or certify fit.
-5. Add project/provenance manifests and change-impact tracking before component or assembly claims.
+5. Extend the bounded CAD revision index and resource with project/provenance manifests and
+   change-impact tracking before component or assembly claims. Current index is not a project model.
 
 ## Delivery sequence and gates
 
@@ -92,4 +93,4 @@ for the generic CAD development gates here. Do not mistake roadmap text for expo
 - FreeCAD 1.1.4 is installed on D:, but its adapter still needs an approved live test on actual STEP and FCStd files.
 - STEP shape summaries are implemented; native feature trees, material, physical mass properties, and CAD modification are not available.
 - No verified drone project/component dataset is bundled; the tools must not fabricate example manufacturer specifications.
-- End-to-end CAD edit/render/inspect/rollback is a future acceptance gate, not a current capability. New-box creation/reinspection passed a live generic FreeCAD fixture test on 2026-10-05; box parameter edit awaits live validation, and visual rendering remains unproven.
+- End-to-end CAD edit/render/inspect/rollback is a future acceptance gate, not a current capability. Generic box creation and a parent-preserving box parameter edit/reinspection passed live FreeCAD fixture tests on 2026-10-05; visual rendering remains unproven.

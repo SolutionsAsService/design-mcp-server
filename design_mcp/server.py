@@ -16,6 +16,7 @@ from design_mcp.cad_write import create_box_revision as write_box_revision
 from design_mcp.cad_write import inspect_revision as read_revision
 from design_mcp.cad_write import revise_box_parameters as write_box_parameters
 from design_mcp.cad_write import compare_box_revisions as compare_box_models
+from design_mcp.cad_write import list_revisions as read_revisions
 
 mcp = FastMCP("design-mcp-server")
 
@@ -105,6 +106,12 @@ def compare_box_revisions(first_revision_id: str, second_revision_id: str) -> di
 
 
 @mcp.tool()
+def list_cad_revisions(offset: int = 0, limit: int = 10) -> dict:
+    """Page hash-verified CAD revision summaries; flag missing or altered artifacts."""
+    return read_revisions(_revision_root(), offset, limit)
+
+
+@mcp.tool()
 def get_scope() -> dict:
     """Describe implemented capabilities and write opt-in boundary."""
     return {
@@ -125,6 +132,14 @@ def get_scope() -> dict:
 def project_assets() -> str:
     """Return the configured root's file inventory."""
     return json.dumps(list_files(_asset_root()), sort_keys=True)
+
+
+@mcp.resource("design://project/revisions")
+def project_revisions() -> str:
+    """Return the first bounded page of opt-in CAD revisions, or configuration required."""
+    if not os.environ.get("DESIGN_MCP_REVISION_ROOT"):
+        return json.dumps({"status": "CONFIGURATION_REQUIRED", "revisions": []})
+    return json.dumps(read_revisions(_revision_root()), sort_keys=True)
 
 
 def main() -> None:

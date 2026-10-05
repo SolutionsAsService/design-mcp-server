@@ -41,9 +41,10 @@ The broader architecture, prospective capabilities, and dependencies are in `roa
 | Priority | Proposed MCP interface | Dependency | Gate |
 | --- | --- | --- | --- |
 | Implemented | `create_box_revision`, `inspect_cad_revision` | Separate revision root and D: FreeCAD Python | Generic 2 × 3 × 4 mm FCStd created and reopened; hash checked |
-| In development | `revise_box_parameters`, `compare_box_revisions` | Verified current writer | Original unchanged; before/after dimensions and hashes recorded; live test pending |
+| Implemented | `revise_box_parameters`, `compare_box_revisions` | Verified current writer | Live 2×3×4 → 5×3×4 mm parent/child edit preserved 24 mm³ parent and created 60 mm³ child |
+| Current increment | `list_cad_revisions`, `design://project/revisions` | Dedicated revision root | Bounded ID-sorted page; hash-checks only selected artifacts, flags invalid entries |
 | Next | `render_cad_revision`, `design://project/revisions` | Proven headless renderer and bounded image output | Image can be independently inspected and tied to revision hash |
 | Later | `inspect_kicad_project`, `design://project/electronics` | KiCad CLI version/API discovery | Read-only fixture, ERC/DRC evidence, source revision recorded |
 | Later | `design://project/current`, `design://project/validation` | Persistent project/provenance schema | Missing data produces UNKNOWN; stale results marked explicitly |
 
-Only `design://project/assets` exists today as an MCP resource. These prospective interfaces are not registered in this increment.
+`design://project/assets` and `design://project/revisions` are registered now. The KiCad, current-project and validation resources in the table remain prospective.

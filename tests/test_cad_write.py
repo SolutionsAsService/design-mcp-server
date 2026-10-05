@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
 from design_mcp.cad_write import (compare_box_revisions, create_box_revision,
-                                  inspect_revision, revise_box_parameters)
+                                  inspect_revision, list_revisions, revise_box_parameters)
 
 
 class CadRevisionTests(unittest.TestCase):
@@ -119,6 +120,31 @@ class CadRevisionTests(unittest.TestCase):
                 revise_box_parameters(self.root, parent["revision_id"], 2, 3, 4, self.python)
         self.assertEqual(len(list(self.root.glob("revision-*.fcstd"))), 1)
         self.assertEqual(len(list(self.root.glob("revision-*.json"))), 1)
+
+    def test_revision_index_paginates_and_flags_corruption(self) -> None:
+        revision_ids = ["0" * 32, "1" * 32, "2" * 32]
+        for revision_id in revision_ids:
+            model_name = f"revision-{revision_id}.fcstd"
+            data = revision_id.encode("ascii")
+            (self.root / model_name).write_bytes(data)
+            record = {"revision_id": revision_id, "model": model_name,
+                      "sha256": hashlib.sha256(data).hexdigest(), "operation": "create_box",
+                      "dimensions_mm": {"length": 2, "width": 3, "height": 4},
+                      "validation": "REOPENED_GEOMETRY_ONLY"}
+            (self.root / f"revision-{revision_id}.json").write_text(json.dumps(record), encoding="utf-8")
+        (self.root / f"revision-{revision_ids[1]}.fcstd").write_bytes(b"changed")
+        first_page = list_revisions(self.root, 0, 2)
+        self.assertEqual(first_page["total"], 3)
+        self.assertTrue(first_page["has_more"])
+        self.assertEqual([item["status"] for item in first_page["revisions"]],
+                         ["HASH_VERIFIED", "INVALID"])
+        last_page = list_revisions(self.root, 2, 2)
+        self.assertFalse(last_page["has_more"])
+        self.assertEqual(last_page["revisions"][0]["revision_id"], revision_ids[2])
+        with self.assertRaises(ValueError):
+            list_revisions(self.root, -1, 2)
+        with self.assertRaises(ValueError):
+            list_revisions(self.root, 0, 21)
 
 
 if __name__ == "__main__":

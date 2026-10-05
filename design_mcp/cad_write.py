@@ -15,6 +15,8 @@ from design_mcp.catalog import MAX_BYTES, _inside, _root
 from design_mcp.freecad import inspect_freecad
 
 REVISION_ID = re.compile(r"[0-9a-f]{32}\Z")
+MAX_MANIFEST_BYTES = 64 * 1024
+MAX_REVISION_ENTRIES = 10000
 
 
 def _output_root(value: str | Path) -> Path:
@@ -45,6 +47,8 @@ def _load_revision(root: Path, revision_id: str) -> tuple[dict, Path]:
     name = f"revision-{revision_id}"
     manifest = _inside(root, f"{name}.json")
     model = _inside(root, f"{name}.fcstd")
+    if manifest.stat().st_size > MAX_MANIFEST_BYTES:
+        raise ValueError("Revision manifest exceeds size limit.")
     record = json.loads(manifest.read_text(encoding="utf-8"))
     if record.get("revision_id") != revision_id or record.get("model") != model.name:
         raise ValueError("Revision manifest does not match model path.")
@@ -152,3 +156,39 @@ def compare_box_revisions(output_root: str | Path, first_id: str, second_id: str
                           for axis in ("length", "width", "height")},
         "geometry_validated": first.get("validation") == second.get("validation") == "REOPENED_GEOMETRY_ONLY",
     }
+
+
+def list_revisions(output_root: str | Path, offset: int = 0, limit: int = 10) -> dict:
+    if isinstance(offset, bool) or not isinstance(offset, int) or offset < 0:
+        raise ValueError("Offset must be a nonnegative integer.")
+    if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 20:
+        raise ValueError("Limit must be between 1 and 20.")
+    root = _output_root(output_root)
+    ids = []
+    for entry in root.iterdir():
+        if not entry.name.startswith("revision-") or entry.suffix != ".json":
+            continue
+        revision_id = entry.stem.removeprefix("revision-")
+        if not REVISION_ID.fullmatch(revision_id) or entry.is_symlink() or not entry.is_file():
+            continue
+        ids.append(revision_id)
+        if len(ids) > MAX_REVISION_ENTRIES:
+            raise ValueError("Revision index exceeds entry limit.")
+    ids.sort()
+    page = []
+    for revision_id in ids[offset:offset + limit]:
+        try:
+            record, _ = _load_revision(root, revision_id)
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+            page.append({"revision_id": revision_id, "status": "INVALID"})
+            continue
+        page.append({
+            "revision_id": revision_id,
+            "status": "HASH_VERIFIED",
+            "operation": record.get("operation"),
+            "parent_revision_id": record.get("parent_revision_id"),
+            "dimensions_mm": record.get("dimensions_mm"),
+            "geometry_validation": record.get("validation"),
+        })
+    return {"total": len(ids), "offset": offset, "limit": limit,
+            "has_more": offset + limit < len(ids), "revisions": page}
