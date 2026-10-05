@@ -8,7 +8,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 from design_mcp.cad_write import (compare_box_revisions, create_box_revision,
-                                  inspect_revision, list_revisions, revise_box_parameters)
+                                  inspect_revision, list_revisions, revise_box_parameters,
+                                  rollback_box_revision)
 
 
 class CadRevisionTests(unittest.TestCase):
@@ -120,6 +121,48 @@ class CadRevisionTests(unittest.TestCase):
                 revise_box_parameters(self.root, parent["revision_id"], 2, 3, 4, self.python)
         self.assertEqual(len(list(self.root.glob("revision-*.fcstd"))), 1)
         self.assertEqual(len(list(self.root.glob("revision-*.json"))), 1)
+
+    def test_rollback_creates_child_and_keeps_ancestors(self) -> None:
+        def fake_worker(arguments, **_kwargs):
+            dimensions = [float(value) for value in arguments[-3:]]
+            Path(arguments[3]).write_bytes(repr(dimensions).encode("ascii"))
+            geometry = {"shape": {"valid": True, "closed": True, "solids": 1,
+                                  "bounding_box_mm": {"extent": dimensions}}}
+            return type("Result", (), {"returncode": 0, "stderr": "",
+                                       "stdout": "DESIGN_MCP_RESULT=" + json.dumps(geometry)})()
+
+        def fake_inspection(_root, filename, _python):
+            values = json.loads((self.root / filename).read_bytes().decode("ascii"))
+            return {"objects": [{"shape": {"valid": True, "closed": True,
+                                            "solids": 1, "bounding_box_mm": {"extent": values}}}]}
+
+        with (patch("design_mcp.cad_write.subprocess.run", side_effect=fake_worker),
+              patch("design_mcp.cad_write.inspect_freecad", side_effect=fake_inspection)):
+            first = create_box_revision(self.root, 2, 3, 4, self.python)
+            second = revise_box_parameters(self.root, first["revision_id"], 5, 3, 4, self.python)
+            third = revise_box_parameters(self.root, second["revision_id"], 6, 3, 4, self.python)
+            reverted = rollback_box_revision(self.root, third["revision_id"], first["revision_id"], self.python)
+            again = revise_box_parameters(self.root, reverted["revision_id"], 7, 3, 4, self.python)
+        self.assertEqual(reverted["operation"], "rollback_box")
+        self.assertEqual(reverted["parent_revision_id"], third["revision_id"])
+        self.assertEqual(reverted["rollback_target_revision_id"], first["revision_id"])
+        self.assertEqual(reverted["rollback_target_sha256"], first["sha256"])
+        self.assertEqual(reverted["dimensions_mm"], first["dimensions_mm"])
+        self.assertEqual(again["parent_revision_id"], reverted["revision_id"])
+        self.assertEqual((self.root / third["model"]).read_bytes(), b"[6.0, 3.0, 4.0]")
+        with self.assertRaisesRegex(ValueError, "earlier ancestor"):
+            rollback_box_revision(self.root, third["revision_id"], third["revision_id"], self.python)
+        with self.assertRaisesRegex(ValueError, "not a verified ancestor"):
+            rollback_box_revision(self.root, first["revision_id"], second["revision_id"], self.python)
+
+        manifest_path = self.root / f"revision-{third['revision_id']}.json"
+        record = json.loads(manifest_path.read_text(encoding="utf-8"))
+        record["parent_sha256"] = "0" * 64
+        manifest_path.write_text(json.dumps(record), encoding="utf-8")
+        with patch("design_mcp.cad_write.subprocess.run") as blocked:
+            with self.assertRaisesRegex(ValueError, "lineage hash mismatch"):
+                rollback_box_revision(self.root, third["revision_id"], first["revision_id"], self.python)
+            blocked.assert_not_called()
 
     def test_revision_index_paginates_and_flags_corruption(self) -> None:
         revision_ids = ["0" * 32, "1" * 32, "2" * 32]

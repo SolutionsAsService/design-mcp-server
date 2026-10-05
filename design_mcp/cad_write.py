@@ -59,7 +59,8 @@ def _load_revision(root: Path, revision_id: str) -> tuple[dict, Path]:
 
 
 def _write_box_revision(root: Path, dimensions: tuple[float, float, float],
-                        executable: Path, parent: tuple[dict, Path] | None = None) -> dict:
+                        executable: Path, parent: tuple[dict, Path] | None = None,
+                        rollback_target: tuple[dict, Path] | None = None) -> dict:
     revision_id = uuid4().hex
     name = f"revision-{revision_id}"
     model = root / f"{name}.fcstd"
@@ -67,11 +68,12 @@ def _write_box_revision(root: Path, dimensions: tuple[float, float, float],
     if model.exists() or manifest_path.exists():
         raise FileExistsError("Revision ID already exists.")
     worker = Path(__file__).with_name("freecad_worker.py")
-    operation = "revise_box" if parent else "create_box"
+    operation = "rollback_box" if rollback_target else ("revise_box" if parent else "create_box")
     arguments = [str(parent[1])] if parent else []
     try:
         result = subprocess.run(
-            [str(executable), "-I", str(worker), str(model), operation, *arguments,
+            [str(executable), "-I", str(worker), str(model),
+             "revise_box" if parent else "create_box", *arguments,
              *(str(value) for value in dimensions)],
             capture_output=True, text=True, timeout=60, env=os.environ.copy(), check=False,
         )
@@ -82,6 +84,8 @@ def _write_box_revision(root: Path, dimensions: tuple[float, float, float],
             raise RuntimeError(f"FreeCAD revision failed (exit {result.returncode}): {result.stderr[-1000:]}")
         if parent and hashlib.sha256(parent[1].read_bytes()).hexdigest() != parent[0]["sha256"]:
             raise RuntimeError("Source revision changed during editing; result discarded.")
+        if rollback_target and hashlib.sha256(rollback_target[1].read_bytes()).hexdigest() != rollback_target[0]["sha256"]:
+            raise RuntimeError("Rollback target changed during editing; result discarded.")
         geometry = json.loads(payload)
         shape = geometry.get("shape") or {}
         extents = shape.get("bounding_box_mm", {}).get("extent", [])
@@ -106,6 +110,9 @@ def _write_box_revision(root: Path, dimensions: tuple[float, float, float],
         if parent:
             record["parent_revision_id"] = parent[0]["revision_id"]
             record["parent_sha256"] = parent[0]["sha256"]
+        if rollback_target:
+            record["rollback_target_revision_id"] = rollback_target[0]["revision_id"]
+            record["rollback_target_sha256"] = rollback_target[0]["sha256"]
         temporary_manifest = root / f"{name}.json.tmp"
         with temporary_manifest.open("x", encoding="utf-8") as output:
             json.dump(record, output, sort_keys=True)
@@ -129,9 +136,58 @@ def revise_box_parameters(output_root: str | Path, parent_revision_id: str, leng
     dimensions = _dimensions(length_mm, width_mm, height_mm)
     root = _output_root(output_root)
     parent = _load_revision(root, parent_revision_id)
-    if parent[0].get("operation") not in {"create_box", "revise_box"}:
+    if parent[0].get("operation") not in {"create_box", "revise_box", "rollback_box"}:
         raise ValueError("Only generated parametric boxes can be revised.")
     return _write_box_revision(root, dimensions, _runtime(python_executable), parent)
+
+
+def rollback_box_revision(output_root: str | Path, current_revision_id: str,
+                          target_revision_id: str,
+                          python_executable: str | Path | None = None) -> dict:
+    """Create a new child of current with dimensions from a verified box ancestor."""
+    root = _output_root(output_root)
+    current = _load_revision(root, current_revision_id)
+    if current_revision_id == target_revision_id:
+        raise ValueError("Rollback target must be an earlier ancestor.")
+    if current[0].get("operation") not in {"create_box", "revise_box", "rollback_box"}:
+        raise ValueError("Only generated parametric boxes can be rolled back.")
+    seen = {current_revision_id}
+    node = current
+    target = None
+    for _ in range(MAX_REVISION_ENTRIES):
+        parent_id = node[0].get("parent_revision_id")
+        if not parent_id:
+            break
+        if parent_id in seen:
+            raise ValueError("Revision lineage contains a cycle.")
+        seen.add(parent_id)
+        parent = _load_revision(root, parent_id)
+        if parent[0]["sha256"] != node[0].get("parent_sha256"):
+            raise ValueError("Revision lineage hash mismatch.")
+        if parent_id == target_revision_id:
+            target = parent
+            break
+        node = parent
+    if target is None:
+        raise ValueError("Rollback target is not a verified ancestor.")
+    if target[0].get("operation") not in {"create_box", "revise_box", "rollback_box"}:
+        raise ValueError("Rollback target is not a generated box.")
+    dimensions = _dimensions(*(target[0]["dimensions_mm"][axis]
+                               for axis in ("length", "width", "height")))
+    executable = _runtime(python_executable)
+    inspection = inspect_freecad(root, target[1].name, executable)
+    objects = inspection.get("objects", [])
+    shape = objects[0].get("shape") if len(objects) == 1 else None
+    extents = (shape or {}).get("bounding_box_mm", {}).get("extent", [])
+    if (shape is None or shape.get("valid") is not True or shape.get("closed") is not True
+            or shape.get("solids") != 1 or len(extents) != 3
+            or any(not isinstance(actual, (int, float)) or not math.isfinite(actual)
+                   or not math.isclose(actual, expected, rel_tol=1e-7, abs_tol=1e-6)
+                   for actual, expected in zip(extents, dimensions))):
+        raise ValueError("Rollback target geometry does not match recorded dimensions.")
+    if hashlib.sha256(target[1].read_bytes()).hexdigest() != target[0]["sha256"]:
+        raise ValueError("Rollback target changed during verification.")
+    return _write_box_revision(root, dimensions, executable, current, target)
 
 
 def inspect_revision(output_root: str | Path, revision_id: str,

@@ -18,6 +18,7 @@ from design_mcp.cad_write import inspect_revision as read_revision
 from design_mcp.cad_write import revise_box_parameters as write_box_parameters
 from design_mcp.cad_write import compare_box_revisions as compare_box_models
 from design_mcp.cad_write import list_revisions as read_revisions
+from design_mcp.cad_write import rollback_box_revision as rollback_box_model
 from design_mcp.preview import preview_cad_revision as export_revision_preview
 from design_mcp.preview import inspect_cad_preview as read_cad_preview
 
@@ -120,6 +121,12 @@ def revise_box_parameters(parent_revision_id: str, length_mm: float, width_mm: f
                           height_mm: float) -> dict:
     """Save a new parameterized box revision without overwriting its hash-checked parent."""
     return write_box_parameters(_revision_root(), parent_revision_id, length_mm, width_mm, height_mm)
+
+
+@mcp.tool()
+def rollback_box_revision(current_revision_id: str, target_revision_id: str) -> dict:
+    """Make a new box child with dimensions from a hash-verified ancestor; preserve both inputs."""
+    return rollback_box_model(_revision_root(), current_revision_id, target_revision_id)
 
 
 @mcp.tool()

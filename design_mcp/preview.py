@@ -25,7 +25,7 @@ def preview_cad_revision(revision_root: str | Path, preview_root: str | Path,
     if source_root == destination_root:
         raise ValueError("Preview root must be separate from the revision root.")
     revision, source = _load_revision(source_root, revision_id)
-    if revision.get("operation") not in {"create_box", "revise_box"}:
+    if revision.get("operation") not in {"create_box", "revise_box", "rollback_box"}:
         raise ValueError("Preview requires a generated box revision.")
     executable = _runtime(python_executable)
     preview_id = uuid4().hex
