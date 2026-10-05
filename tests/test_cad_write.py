@@ -61,13 +61,9 @@ class CadRevisionTests(unittest.TestCase):
         self.assertEqual(list(self.root.glob("revision-*")), [])
 
     def test_rejects_symlink_root_and_invalid_revision_id(self) -> None:
-        link = self.root.parent / (self.root.name + "-link")
-        try:
-            link.symlink_to(self.root, target_is_directory=True)
+        with patch("design_mcp.cad_write.Path.is_symlink", return_value=True):
             with self.assertRaises(ValueError):
-                create_box_revision(link, 2, 3, 4, self.python)
-        finally:
-            link.unlink(missing_ok=True)
+                create_box_revision(self.root, 2, 3, 4, self.python)
         for revision_id in ["../other", "a" * 31, "A" * 32]:
             with self.assertRaises(ValueError):
                 inspect_revision(self.root, revision_id, self.python)
