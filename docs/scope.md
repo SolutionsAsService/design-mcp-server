@@ -10,6 +10,7 @@ This repository is the long-term civilian design and engineering MCP project. Th
 - Paginated STL face, edge, and vertex records.
 - Read-only STEP/FCStd model summaries and bounded BREP face/edge/vertex/solid/shell pages through configured FreeCAD bundled Python; FCStd named-shape minimum separation is implemented but awaits live fixture validation.
 - Opt-in creation and copy-on-write parameter revision of a generated FreeCAD box under a separate revision root, with manifests, hash-checked reinspection, and dimension comparison; no modification of existing source assets.
+- Opt-in SVG wireframe export for generated box revisions to a third scratch root, with source/preview hashes and non-visual integrity reinspection. This is a CAD-derived projection, not a photorealistic render.
 
 STL units are not encoded. Measurements are in raw model coordinates, with units explicitly UNKNOWN. The mesh inspector does not check self-intersections, infer materials/density, calculate mass properties, or establish that a mesh represents a manufacturable part. A closed mesh is not proof of engineering validity.
 

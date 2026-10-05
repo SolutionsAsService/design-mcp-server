@@ -16,6 +16,8 @@ A modular MCP engineering project. The current release is a read-only project as
 - `revise_box_parameters(parent_revision_id, length_mm, width_mm, height_mm)` creates a new FCStd from a hash-checked generated box, preserving its parent.
 - `compare_box_revisions(first_revision_id, second_revision_id)` reports before/after dimensions and direct parentage from hash-checked manifests.
 - `list_cad_revisions(offset=0, limit=10)` pages revision summaries and flags missing or altered models as `INVALID` (maximum page size 20).
+- `preview_cad_revision(revision_id)` exports a CAD-tessellated, isometric SVG wireframe under a separate preview root, linked to the revision hash.
+- `inspect_cad_preview(preview_id)` checks the saved preview and source hashes; it does not approve the image visually.
 - `get_scope()` reports the implemented boundary.
 - Resources: `design://project/assets` and `design://project/revisions` (first page; requires an output root).
 
@@ -51,6 +53,8 @@ Only `.step`, `.stp`, and `.fcstd` files within the configured asset root are ac
 ### Opt-in generic CAD revisions
 
 Set `DESIGN_MCP_REVISION_ROOT` to an **existing, dedicated non-symlink directory** separate from the asset root to enable the revision tools. Keep this root on E: for this project; FreeCAD runtime and temp remain on D:. Each create/edit returns a random revision ID and writes a new `.fcstd` plus a JSON file containing dimensions in mm, SHA-256, parent ID/hash when applicable, and reopen geometry validation. Comparison does not invoke FreeCAD. Listings sort by ID, not creation time, and verify hashes only on the requested page; `INVALID` is an integrity status, not an engineering judgment. The write is not a render, assembly check, or manufacturing approval. Treat the revision root as trusted: FreeCAD's process is not an OS sandbox.
+
+For SVG previews, also set `DESIGN_MCP_PREVIEW_ROOT` to an **existing, dedicated non-symlink scratch directory** distinct from both roots (for example, `E:\design-mcp-server\.tmp\previews`). The worker uses the real FreeCAD shape's tessellation and emits up to 5,000 triangles onto a 640 × 480 isometric wireframe; the preview is capped at 2 MiB and has a SHA-256 sidecar. No hidden-surface removal, material depiction, lighting, sectioning or human visual approval is implied. Inspect the SVG in a viewer before accepting a visual claim.
 
 ## Scope and roadmap
 

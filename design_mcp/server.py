@@ -18,6 +18,8 @@ from design_mcp.cad_write import inspect_revision as read_revision
 from design_mcp.cad_write import revise_box_parameters as write_box_parameters
 from design_mcp.cad_write import compare_box_revisions as compare_box_models
 from design_mcp.cad_write import list_revisions as read_revisions
+from design_mcp.preview import preview_cad_revision as export_revision_preview
+from design_mcp.preview import inspect_cad_preview as read_cad_preview
 
 mcp = FastMCP("design-mcp-server")
 
@@ -42,6 +44,19 @@ def _revision_root() -> Path:
     root = root.resolve(strict=True)
     if root == _asset_root():
         raise RuntimeError("Revision root must differ from the read-only asset root.")
+    return root
+
+
+def _preview_root() -> Path:
+    configured = os.environ.get("DESIGN_MCP_PREVIEW_ROOT")
+    if not configured:
+        raise RuntimeError("Set DESIGN_MCP_PREVIEW_ROOT to an existing dedicated directory.")
+    raw = Path(configured)
+    if raw.is_symlink() or not raw.is_dir():
+        raise RuntimeError("DESIGN_MCP_PREVIEW_ROOT must be an existing non-symlink directory.")
+    root = raw.resolve(strict=True)
+    if root in {_asset_root(), _revision_root()}:
+        raise RuntimeError("Preview root must differ from asset and revision roots.")
     return root
 
 
@@ -120,13 +135,25 @@ def list_cad_revisions(offset: int = 0, limit: int = 10) -> dict:
 
 
 @mcp.tool()
+def preview_cad_revision(revision_id: str) -> dict:
+    """Export bounded, CAD-derived SVG wireframe into a dedicated scratch root."""
+    return export_revision_preview(_revision_root(), _preview_root(), revision_id)
+
+
+@mcp.tool()
+def inspect_cad_preview(preview_id: str) -> dict:
+    """Verify preview/source hashes; visual interpretation remains a separate review step."""
+    return read_cad_preview(_revision_root(), _preview_root(), preview_id)
+
+
+@mcp.tool()
 def get_scope() -> dict:
     """Describe implemented capabilities and write opt-in boundary."""
     return {
         "mode": "READ_ONLY_ASSET_CATALOG_WITH_OPT_IN_CAD_REVISIONS",
         "network": False,
         "subprocess": "FreeCAD bundled Python only, when configured",
-        "writes": "new generic FCStd revisions only when DESIGN_MCP_REVISION_ROOT is configured",
+        "writes": "new generic FCStd revisions and SVG previews only with separate configured output roots",
         "geometry_formats": ["STL triangulated surface mesh", "STEP BREP via FreeCAD", "FCStd feature tree and shape distance via FreeCAD"],
         "coordinate_units": "Unknown for STL; the format contains no unit metadata.",
         "self_intersection_test": False,

@@ -67,8 +67,8 @@ for the generic CAD development gates here. Do not mistake roadmap text for expo
 1. Prove STEP and FCStd inspection against actual fixtures on the target Windows runtime.
 2. Add bounded FCStd shape-to-shape separation (this increment); distinguish zero separation
    from actual overlap and explicitly report unsupported inference.
-3. Add read-only BREP entity paging and section/preview export to a controlled scratch directory,
-   retaining source hashes and strict resource limits.
+3. Read-only BREP entity paging and a hash-linked, bounded SVG wireframe preview are implemented.
+   Section views and visually inspected render output remain future acceptance gates.
 4. Continue from the copy-on-write box edit and dimension comparison with preview,
    visual inspection and broader rollback; never mutate the source by default. Current edits
    reopen geometry but do not render or certify fit.
@@ -93,4 +93,4 @@ for the generic CAD development gates here. Do not mistake roadmap text for expo
 - FreeCAD 1.1.4 is installed on D:, but its adapter still needs an approved live test on actual STEP and FCStd files.
 - STEP shape summaries and bounded BREP paging are implemented; native feature histories, material and physical mass properties are unavailable, and CAD editing is limited to generated parametric boxes.
 - No verified drone project/component dataset is bundled; the tools must not fabricate example manufacturer specifications.
-- End-to-end CAD edit/render/inspect/rollback is a future acceptance gate, not a current capability. Generic box creation and a parent-preserving box parameter edit/reinspection passed live FreeCAD fixture tests on 2026-10-05; visual rendering remains unproven.
+- End-to-end CAD edit/render/inspect/rollback is a future acceptance gate, not a current capability. Generic box creation and a parent-preserving box parameter edit/reinspection passed live FreeCAD fixture tests on 2026-10-05; preview export has only unit tests until its live gate, and visual interpretation remains separate.

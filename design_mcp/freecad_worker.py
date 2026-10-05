@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import sys
 
 import FreeCAD
@@ -129,6 +130,57 @@ def get_entities(path, entity, object_name, offset, limit):
             FreeCAD.closeDocument(document.Name)
 
 
+def export_wireframe(path, object_name, output_path):
+    document = FreeCAD.openDocument(path, True)
+    try:
+        feature = document.getObject(object_name)
+        if feature is None or feature.TypeId != "Part::Box" or len(document.Objects) != 1:
+            raise ValueError("Expected one generated parametric box.")
+        shape = feature.Shape
+        if not shape.isValid() or shape.isNull():
+            raise ValueError("Expected a valid shape.")
+        extent = max(shape.BoundBox.XLength, shape.BoundBox.YLength, shape.BoundBox.ZLength)
+        points, triangles = shape.tessellate(max(extent / 100, 0.1))
+        if not 0 < len(triangles) <= 5000 or len(points) > 10000:
+            raise ValueError("Tessellation exceeds preview limits or is empty.")
+        projected = [(0.70710678 * (point.x - point.y),
+                      0.40824829 * (point.x + point.y) - 0.81649658 * point.z)
+                     for point in points]
+        if not all(math.isfinite(coordinate) for pair in projected for coordinate in pair):
+            raise ValueError("Preview contains non-finite coordinates.")
+        minimum_x = min(pair[0] for pair in projected)
+        minimum_y = min(pair[1] for pair in projected)
+        span_x = max(pair[0] for pair in projected) - minimum_x
+        span_y = max(pair[1] for pair in projected) - minimum_y
+        scale = min(560 / max(span_x, 1e-9), 400 / max(span_y, 1e-9))
+        coordinates = [(320 + (x - minimum_x - span_x / 2) * scale,
+                        240 - (y - minimum_y - span_y / 2) * scale)
+                       for x, y in projected]
+        edges = set()
+        for triangle in triangles:
+            for first, second in ((triangle[0], triangle[1]),
+                                  (triangle[1], triangle[2]),
+                                  (triangle[2], triangle[0])):
+                if first == second or not 0 <= first < len(points) or not 0 <= second < len(points):
+                    raise ValueError("Invalid tessellation edge.")
+                edges.add(tuple(sorted((first, second))))
+        segments = []
+        for first, second in sorted(edges):
+            x1, y1 = coordinates[first]
+            x2, y2 = coordinates[second]
+            segments.append(f"M{x1:.2f},{y1:.2f}L{x2:.2f},{y2:.2f}")
+        svg = ('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" '
+               'viewBox="0 0 640 480"><rect width="640" height="480" fill="#fff"/>'
+               '<path fill="none" stroke="#243b53" stroke-width="1" d="'
+               + " ".join(segments) + '"/></svg>')
+        with open(output_path, "x", encoding="utf-8") as output:
+            output.write(svg)
+        return {"triangle_count": len(triangles), "vertex_count": len(points),
+                "wireframe_edge_count": len(edges), "canvas_px": [640, 480]}
+    finally:
+        FreeCAD.closeDocument(document.Name)
+
+
 def _save_box(document, path, length, width, height):
     try:
         box = document.getObject("Box")
@@ -174,6 +226,8 @@ if __name__ == "__main__":
     elif operation == "entities" and len(sys.argv) == 7:
         result = get_entities(sys.argv[1], sys.argv[3], sys.argv[4],
                               int(sys.argv[5]), int(sys.argv[6]))
+    elif operation == "preview" and len(sys.argv) == 5:
+        result = export_wireframe(sys.argv[1], sys.argv[3], sys.argv[4])
     elif operation == "create_box" and len(sys.argv) == 6:
         result = create_box(sys.argv[1], sys.argv[3], sys.argv[4], sys.argv[5])
     elif operation == "revise_box" and len(sys.argv) == 7:
