@@ -10,6 +10,7 @@ from design_mcp.catalog import inspect_asset as inspect_file
 from design_mcp.catalog import list_assets as list_files
 from design_mcp.geometry import get_stl_entities as read_stl_entities
 from design_mcp.geometry import inspect_stl_geometry as inspect_stl
+from design_mcp.freecad import inspect_freecad as read_freecad
 
 mcp = FastMCP("design-mcp-server")
 
@@ -49,19 +50,25 @@ def get_stl_entities(relative_path: str, entity: str = "faces", offset: int = 0,
 
 
 @mcp.tool()
+def inspect_freecad_model(relative_path: str) -> dict:
+    """Inspect STEP geometry or an FCStd feature tree through FreeCAD's bundled Python."""
+    return read_freecad(_asset_root(), relative_path)
+
+
+@mcp.tool()
 def get_scope() -> dict:
     """Describe implemented capabilities and fixed read-only boundaries."""
     return {
-        "mode": "READ_ONLY_ASSET_CATALOG_AND_STL_GEOMETRY",
+        "mode": "READ_ONLY_ASSET_CATALOG_AND_CAD_GEOMETRY",
         "network": False,
-        "subprocess": False,
+        "subprocess": "FreeCAD bundled Python only, when configured",
         "writes": False,
-        "geometry_formats": ["STL triangulated surface mesh"],
+        "geometry_formats": ["STL triangulated surface mesh", "STEP BREP via FreeCAD", "FCStd feature tree via FreeCAD"],
         "coordinate_units": "Unknown for STL; the format contains no unit metadata.",
         "self_intersection_test": False,
         "vehicle_analysis": False,
         "container_checks": [".stl", ".gltf", ".glb", ".3mf", ".fcstd"],
-        "hashed_only": [".step", ".stp", "other"],
+        "hashed_only": ["other"],
     }
 
 
