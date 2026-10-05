@@ -21,6 +21,15 @@ def _shape_summary(shape):
     solids = len(shape.Solids)
     valid = shape.isValid()
     closed = shape.isClosed()
+    volume = shape.Volume if valid and closed and solids else None
+    centroid = None
+    if volume is not None and volume > 0:
+        solid_parts = [(solid.Volume, solid.CenterOfMass) for solid in shape.Solids
+                       if solid.isValid() and solid.isClosed() and solid.Volume > 0]
+        total = sum(part_volume for part_volume, _ in solid_parts)
+        if total > 0 and math.isclose(total, volume, rel_tol=1e-7, abs_tol=1e-7):
+            centroid = [sum(part_volume * getattr(center, axis) for part_volume, center in solid_parts) / total
+                        for axis in ("x", "y", "z")]
     return {
         "valid": valid,
         "closed": closed,
@@ -35,8 +44,8 @@ def _shape_summary(shape):
             "extent": [bounds.XLength, bounds.YLength, bounds.ZLength],
         },
         "surface_area_mm2": shape.Area,
-        "enclosed_volume_mm3": shape.Volume if valid and closed and solids else None,
-        "volume_centroid_mm": _vector(shape.CenterOfMass) if valid and closed and solids and shape.Volume > 0 else None,
+        "enclosed_volume_mm3": volume,
+        "volume_centroid_mm": centroid,
     }
 
 
@@ -74,6 +83,20 @@ def measure_distance(path, first_name, second_name):
         if first.Shape.isNull() or second.Shape.isNull():
             raise ValueError("Both shapes must be non-null.")
         distance, point_pairs, _ = first.Shape.distToShape(second.Shape)
+        intersection_volume = None
+        relationship = "SEPARATED" if distance > 1e-7 else "UNKNOWN_ZERO_DISTANCE_NON_SOLID"
+        if distance <= 1e-7 and all(shape.isValid() and shape.isClosed() and shape.Solids
+                                    for shape in (first.Shape, second.Shape)):
+            try:
+                common = first.Shape.common(second.Shape)
+                if common.isValid():
+                    intersection_volume = common.Volume
+                    relationship = ("VOLUMETRIC_OVERLAP" if intersection_volume > 1e-6
+                                    else "ZERO_DISTANCE_NO_VOLUME_OVERLAP")
+                else:
+                    relationship = "UNKNOWN_BOOLEAN_INVALID"
+            except Exception:
+                relationship = "UNKNOWN_BOOLEAN_FAILED"
         return {
             "format": "FCStd",
             "objects": [first_name, second_name],
@@ -81,8 +104,11 @@ def measure_distance(path, first_name, second_name):
             "closest_points_mm": [[_vector(first_point), _vector(second_point)]
                                   for first_point, second_point in point_pairs[:10]],
             "closest_points_truncated": len(point_pairs) > 10,
-            "overlap_or_contact": distance == 0,
-            "note": "Zero distance includes touching and overlap; it does not distinguish them.",
+            "overlap_or_contact": distance <= 1e-7,
+            "relationship": relationship,
+            "intersection_volume_mm3": intersection_volume,
+            "overlap_threshold_mm3": 1e-6,
+            "note": "Zero distance without measurable volume overlap may mean contact or numerical coincidence; non-solids are not classified volumetrically.",
         }
     finally:
         FreeCAD.closeDocument(document.Name)

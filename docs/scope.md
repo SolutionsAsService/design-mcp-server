@@ -8,7 +8,7 @@ This repository is the long-term civilian design and engineering MCP project. Th
 - Bounded integrity checks for STL, glTF/GLB, 3MF, and FreeCAD FCStd containers.
 - STL mesh topology and geometric metrics: triangle faces, unique vertices and edges, edge-connected shell count, boundary/non-manifold/orientation-conflict edges, axis-aligned bounds, surface area, surface centroid, and enclosed volume/volume centroid only for a closed consistently oriented mesh.
 - Paginated STL face, edge, and vertex records.
-- Read-only STEP/FCStd model summaries and bounded BREP face/edge/vertex/solid/shell pages through configured FreeCAD bundled Python; FCStd named-shape minimum separation is implemented but awaits live fixture validation.
+- Read-only STEP/FCStd model summaries and bounded BREP face/edge/vertex/solid/shell pages through configured FreeCAD bundled Python; FCStd named-shape minimum distance distinguishes measurable volumetric intersection from zero-distance contact/ambiguity on valid closed solids. Live fixtures remain the acceptance gate.
 - Opt-in creation and copy-on-write parameter revision of a generated FreeCAD box under a separate revision root, with manifests, hash-checked reinspection, and dimension comparison; no modification of existing source assets.
 - Opt-in SVG wireframe export for generated box revisions to a third scratch root, with source/preview hashes and non-visual integrity reinspection. This is a CAD-derived projection, not a photorealistic render.
 

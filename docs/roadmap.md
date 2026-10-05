@@ -65,8 +65,9 @@ for the generic CAD development gates here. Do not mistake roadmap text for expo
 ### Next generic CAD milestones
 
 1. Prove STEP and FCStd inspection against actual fixtures on the target Windows runtime.
-2. Add bounded FCStd shape-to-shape separation (this increment); distinguish zero separation
-   from actual overlap and explicitly report unsupported inference.
+2. Bounded FCStd shape-to-shape separation now reports positive volumetric intersection separately
+   from zero distance without measurable intersection. This is not a contact or clearance certification;
+   non-solids and failed booleans remain unknown pending live-fixture acceptance.
 3. Read-only BREP entity paging and a hash-linked, bounded SVG wireframe preview are implemented.
    Section views and visually inspected render output remain future acceptance gates.
 4. Continue from the copy-on-write box edit and dimension comparison with preview,
