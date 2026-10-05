@@ -1,52 +1,26 @@
 # Capability audit — 2026-10-05
 
-Historical audited baseline: `3b411e9` on `main`; canonical checkout `E:\design-mcp-server`.
-The inventory below records that baseline, not the current tool count. See scope.md,
-roadmap.md and native-cad-verification.md for later increments and live evidence. This is
-not an assertion that any particular vehicle design is validated.
+Baseline before this increment: `6647075` on `main`; canonical Windows checkout `E:\design-mcp-server`.
+This audits registered code and observed tests, not an aircraft or manufacturing design.
+The earlier seven-tool audit remains recoverable in Git history.
 
-| Area | What exists | Evidence / limitation |
+| Area | Current implementation | Evidence and limit |
 | --- | --- | --- |
-| MCP surface | Seven tools: `list_assets`, `inspect_asset`, `inspect_stl_geometry`, `get_stl_entities`, `inspect_freecad_model`, `measure_freecad_distance`, `get_scope`; one resource `design://project/assets` | Registered in `design_mcp/server.py`; no MCP prompts or project-specific resources |
-| Project/schema | Configured read-only filesystem root; dictionaries returned by tools | No persistent project model, component schema, revision registry, provenance graph or normalized engineering units |
-| CAD files | STL topology/metrics and paginated faces/edges/vertices; STEP shape summaries and FCStd object tree via FreeCAD | At this historical baseline STL units were unknown and FCStd distance lacked a live fixture; later evidence is in native-cad-verification.md |
-| CAD runtime | FreeCAD 1.1.4 bundled Python on D: was previously version/API checked | This baseline preceded the subsequent live fixture test documented in native-cad-verification.md |
-| Tests | 15 `unittest` cases pass in the E: virtualenv; catalog/mesh deterministic, FreeCAD subprocess mocked | No CAD fixture integration suite or image/section comparison |
-| Dependencies | Python >=3.11, `mcp>=1.9,<2`, standard-library geometry; optional separately configured FreeCAD Python | No NumPy, Pydantic, KiCad, simulator or network research client installed by this project |
-| Execution | Read-only path confinement and file-size caps; FreeCAD subprocess timeout 60 s | FreeCAD opening an untrusted file is not sandboxed; server not registered with OpenClaw |
+| MCP | 19 tools in `design_mcp/server.py`; three resources: `design://project/assets`, `design://project/revisions`, `design://project/snapshots` | Registered in code; current increment still needs a live MCP tool-list check |
+| Asset catalog | Read-only path-confined inventory, SHA-256, bounded STL/glTF/GLB/3MF/FCStd container checks | Container checks do not validate engineering suitability |
+| Mesh | STL topology, bounded face/edge/vertex paging, bounds/area and conditional volume | STL units unknown; no self-intersection or mass/material inference |
+| Native CAD | STEP shape summaries, FCStd object tree, bounded BREP paging and named-shape distance with conditional intersection volume | FreeCAD 1.1.4 portable Python on D: passed generic STEP/FCStd fixtures; zero distance is not clearance certification (`native-cad-verification.md`) |
+| CAD transactions | Opt-in generated-box create/edit/ancestor rollback with hash manifests; revision listing and dimension comparison | Live FreeCAD box rollback passed; arbitrary CAD editing, typed project model and cross-process locking absent (`rollback-verification.md`) |
+| Provenance snapshots | Opt-in bounded SHA-256 manifests for up to 20 generic asset/revision references; paged listing and change/missing/unknown recheck | Four new deterministic tests pass locally; a snapshot is neither a typed project nor a dependency graph |
+| Preview | Hash-linked 640×480 SVG wireframe for generated box revisions | Live export and integrity check passed; visual approval, hidden-line removal and sections absent (`preview-verification.md`) |
+| Tests/dependencies | 35 `unittest` tests pass locally; Python >=3.11 and `mcp>=1.9,<2`; optional FreeCAD 1.1.4 on D: | E: test run pending for this increment; no KiCad adapter, simulator, Pydantic/NumPy or network research client required |
+| Runtime | Read-only asset root, opt-in separate revision/preview roots, 60-second FreeCAD subprocess limit | FreeCAD file opening is not sandboxed; no physical hardware actuation; no proven OpenClaw registration of the newest tool |
 
-## Gaps and implementation order
+## Gaps and next gated step
 
-1. **CAD revisions:** separate explicitly configured output root; create a simple parametric document, reopen and verify, record source/hash. Preserve inputs. Unit tests and a real FreeCAD fixture are distinct gates.
-2. **Closed loop:** reinspection of revision, opt-in copy-on-write parameter edits, render and geometry comparison. No automatic acceptance on shape validity alone.
-3. **Structured project state:** immutable resource references, provenance/status/units and invalidation graph. No unverified manufacturer values.
-4. **Generic integration adapters:** KiCad inspection and neutral geometry exchange only after live toolchain proof; simulation/analysis/manufacturing depend on validated inputs and are not available now.
+1. Prove the new snapshot tools and resource through the MCP on E: using generic fixtures. A snapshot is not an engineering project, compatibility result or dependency graph.
+2. Extend to typed project/evidence records and explicit units after the snapshot integrity gate. Preserve missing data as `UNKNOWN`.
+3. Independently inspect the SVG visually; improve rendering and sectioning before claiming a closed visual loop.
+4. Any component or assembly work depends on trusted geometry and source-backed specifications. KiCad, analysis, simulation and build outputs remain roadmap items, not exported tools.
 
-## Module plan and external resources
-
-- `design_mcp/cad_write.py`: output-root validation, artifact creation and revision manifests.
-- `design_mcp/freecad_worker.py`: bounded CAD operations in FreeCAD's bundled Python, followed by reopen/shape validation.
-- `design_mcp/server.py`: opt-in MCP tools; existing read-only calls retain behavior.
-- `tests/test_cad_write.py`: invalid input, output-boundary and successful/failed worker cases.
-- No new packages are necessary for this increment. FreeCAD on D: is optional and remains separately configured; see README. The main acceptance gate is a real generic box document opened and checked through the adapter.
-
-The broader architecture, prospective capabilities, and dependencies are in `roadmap.md`. They are not exported MCP tools until implemented and verified.
-
-## Phase 1 evidence (2026-10-05)
-
-- `create_box_revision(2, 3, 4)` ran through FreeCAD 1.1.4 bundled Python on D: and saved a new FCStd document plus a SHA-256 manifest under `E:\design-mcp-server\.tmp\revisions`.
-- `inspect_revision` verified the artifact hash and reopened the saved document: one valid, closed `Part::Box`, bounds 2 × 3 × 4 mm, volume approximately 24 mm³, and centroid (1, 1.5, 2) mm.
-- 19 unit tests pass on the E: Windows checkout. This verifies generic box creation and reinspection, **not** rendering, parameter edits, assemblies, manufacturing suitability, or the earlier distance tool's real-file behavior.
-
-## Tool and resource inventory for the next gates
-
-| Priority | Proposed MCP interface | Dependency | Gate |
-| --- | --- | --- | --- |
-| Implemented | `create_box_revision`, `inspect_cad_revision` | Separate revision root and D: FreeCAD Python | Generic 2 × 3 × 4 mm FCStd created and reopened; hash checked |
-| Implemented | `revise_box_parameters`, `compare_box_revisions` | Verified current writer | Live 2×3×4 → 5×3×4 mm parent/child edit preserved 24 mm³ parent and created 60 mm³ child |
-| Current increment | `list_cad_revisions`, `design://project/revisions` | Dedicated revision root | Bounded ID-sorted page; hash-checks only selected artifacts, flags invalid entries |
-| Next | `render_cad_revision`, `design://project/revisions` | Proven headless renderer and bounded image output | Image can be independently inspected and tied to revision hash |
-| Later | `inspect_kicad_project`, `design://project/electronics` | KiCad CLI version/API discovery | Read-only fixture, ERC/DRC evidence, source revision recorded |
-| Later | `design://project/current`, `design://project/validation` | Persistent project/provenance schema | Missing data produces UNKNOWN; stale results marked explicitly |
-
-`design://project/assets` and `design://project/revisions` are registered now. The KiCad, current-project and validation resources in the table remain prospective.
+See `docs/roadmap.md` for the long-range scope. Do not treat planned interfaces as implemented.

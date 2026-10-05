@@ -1,6 +1,6 @@
 # design-mcp-server
 
-A modular MCP engineering project. The current release is a read-only project asset catalog with an opt-in generic FreeCAD revision writer; it is not a complete vehicle engineering platform.
+A modular MCP engineering project. The current release provides a read-only asset catalog with opt-in generic FreeCAD revisions and bounded provenance snapshots; it is not a complete vehicle engineering platform.
 
 ## Current tools
 
@@ -19,10 +19,15 @@ A modular MCP engineering project. The current release is a read-only project as
 - `list_cad_revisions(offset=0, limit=10)` pages revision summaries and flags missing or altered models as `INVALID` (maximum page size 20).
 - `preview_cad_revision(revision_id)` exports a CAD-tessellated, isometric SVG wireframe under a separate preview root, linked to the revision hash.
 - `inspect_cad_preview(preview_id)` checks the saved preview and source hashes; it does not approve the image visually.
+- `create_project_snapshot(name, asset_paths, revision_ids)` records up to 20 hashed generic asset/CAD references in a new immutable manifest under the revision root.
+- `inspect_project_snapshot(snapshot_id)` rechecks those references, reporting `CURRENT`, `STALE`, or `UNKNOWN` and the references needing reinspection; `CURRENT` is **not** design approval.
+- `list_project_snapshots(offset=0, limit=10)` pages integrity-checked snapshot summaries; corrupt manifests are marked `INVALID`.
 - `get_scope()` reports the implemented boundary.
-- Resources: `design://project/assets` and `design://project/revisions` (first page; requires an output root).
+- Resources: `design://project/assets`, `design://project/revisions`, and `design://project/snapshots` (first page; requires an output root).
 
 STL coordinates have unknown units. The mesh tool does not test self-intersections, infer materials, or validate engineering suitability. FreeCAD uses millimetres internally for STEP/FCStd geometry; no material or mass is inferred. Box creation and copy-on-write box edits are the only CAD authoring operations; they do not validate manufacture or physical fit. No vehicle engineering, electrical, propulsion, simulation, physical-hardware, or flight-test commands are available.
+
+Snapshot manifests retain content hashes and the requested references only: no typed requirements, component data, assembly claims, or dependency graph. Asset paths are confined to the configured root; output is confined to the revision root. A changed or missing reference is `STALE`; an unsafe/unreadable reference is `UNKNOWN`. The manifest hash detects accidental alteration within this trusted root, not malicious rewriting with a recomputed hash.
 
 ## Setup
 

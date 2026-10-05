@@ -11,6 +11,7 @@ This repository is the long-term civilian design and engineering MCP project. Th
 - Read-only STEP/FCStd model summaries and bounded BREP face/edge/vertex/solid/shell pages through configured FreeCAD bundled Python; FCStd named-shape minimum distance distinguishes measurable volumetric intersection from zero-distance contact/ambiguity on valid closed solids. The generic STEP/FCStd live-fixture gate passed; see native-cad-verification.md.
 - Opt-in creation, copy-on-write parameter revision and ancestor rollback of a generated FreeCAD box under a separate revision root, with manifests, hash-checked reinspection, lineage verification and dimension comparison; no modification of existing source assets.
 - Opt-in SVG wireframe export for generated box revisions to a third scratch root, with source/preview hashes and non-visual integrity reinspection. This is a CAD-derived projection, not a photorealistic render.
+- Opt-in bounded project snapshots referencing SHA-256-checked assets and CAD revisions, with snapshot listing and content-change status; this is a provenance index, not a typed project or an engineering dependency graph.
 
 STL units are not encoded. Measurements are in raw model coordinates, with units explicitly UNKNOWN. The mesh inspector does not check self-intersections, infer materials/density, calculate mass properties, or establish that a mesh represents a manufacturable part. A closed mesh is not proof of engineering validity.
 

@@ -21,6 +21,9 @@ from design_mcp.cad_write import list_revisions as read_revisions
 from design_mcp.cad_write import rollback_box_revision as rollback_box_model
 from design_mcp.preview import preview_cad_revision as export_revision_preview
 from design_mcp.preview import inspect_cad_preview as read_cad_preview
+from design_mcp.project_snapshot import create_project_snapshot as write_snapshot
+from design_mcp.project_snapshot import inspect_project_snapshot as read_snapshot
+from design_mcp.project_snapshot import list_project_snapshots as read_snapshots
 
 mcp = FastMCP("design-mcp-server")
 
@@ -154,13 +157,31 @@ def inspect_cad_preview(preview_id: str) -> dict:
 
 
 @mcp.tool()
+def create_project_snapshot(name: str, asset_paths: list[str], revision_ids: list[str]) -> dict:
+    """Record a bounded, hash-linked set of generic assets and CAD revisions."""
+    return write_snapshot(_asset_root(), _revision_root(), name, asset_paths, revision_ids)
+
+
+@mcp.tool()
+def inspect_project_snapshot(snapshot_id: str) -> dict:
+    """Recheck snapshot references; CURRENT means only that file hashes still match."""
+    return read_snapshot(_asset_root(), _revision_root(), snapshot_id)
+
+
+@mcp.tool()
+def list_project_snapshots(offset: int = 0, limit: int = 10) -> dict:
+    """Page bounded snapshot summaries with manifest integrity statuses."""
+    return read_snapshots(_revision_root(), offset, limit)
+
+
+@mcp.tool()
 def get_scope() -> dict:
     """Describe implemented capabilities and write opt-in boundary."""
     return {
         "mode": "READ_ONLY_ASSET_CATALOG_WITH_OPT_IN_CAD_REVISIONS",
         "network": False,
         "subprocess": "FreeCAD bundled Python only, when configured",
-        "writes": "new generic FCStd revisions and SVG previews only with separate configured output roots",
+        "writes": "new generic FCStd revisions, bounded snapshot manifests and SVG previews only with configured output roots",
         "geometry_formats": ["STL triangulated surface mesh", "STEP BREP via FreeCAD", "FCStd feature tree and shape distance via FreeCAD"],
         "coordinate_units": "Unknown for STL; the format contains no unit metadata.",
         "self_intersection_test": False,
@@ -182,6 +203,14 @@ def project_revisions() -> str:
     if not os.environ.get("DESIGN_MCP_REVISION_ROOT"):
         return json.dumps({"status": "CONFIGURATION_REQUIRED", "revisions": []})
     return json.dumps(read_revisions(_revision_root()), sort_keys=True)
+
+
+@mcp.resource("design://project/snapshots")
+def project_snapshots() -> str:
+    """Return a bounded page of generic snapshots or configuration required."""
+    if not os.environ.get("DESIGN_MCP_REVISION_ROOT"):
+        return json.dumps({"status": "CONFIGURATION_REQUIRED", "snapshots": []})
+    return json.dumps(read_snapshots(_revision_root()), sort_keys=True)
 
 
 def main() -> None:
