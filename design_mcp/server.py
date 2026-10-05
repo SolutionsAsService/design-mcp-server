@@ -1,0 +1,64 @@
+from __future__ import annotations
+
+import json
+import os
+from pathlib import Path
+
+from mcp.server.fastmcp import FastMCP
+
+from design_mcp.catalog import inspect_asset as inspect_file
+from design_mcp.catalog import list_assets as list_files
+
+mcp = FastMCP("design-mcp-server")
+
+
+def _asset_root() -> Path:
+    configured = os.environ.get("DESIGN_MCP_ASSET_ROOT")
+    if not configured:
+        raise RuntimeError("Set DESIGN_MCP_ASSET_ROOT to an existing directory.")
+    root = Path(configured).resolve(strict=True)
+    if not root.is_dir():
+        raise RuntimeError("DESIGN_MCP_ASSET_ROOT must be a directory.")
+    return root
+
+
+@mcp.tool()
+def list_assets(relative_directory: str = ".") -> dict:
+    """List file metadata beneath the configured read-only root."""
+    return list_files(_asset_root(), relative_directory)
+
+
+@mcp.tool()
+def inspect_asset(relative_path: str) -> dict:
+    """Hash an asset and run limited container checks; no dimensions or fit analysis."""
+    return inspect_file(_asset_root(), relative_path)
+
+
+@mcp.tool()
+def get_scope() -> dict:
+    """Describe the fixed read-only capability boundary."""
+    return {
+        "mode": "READ_ONLY_ASSET_CATALOG",
+        "network": False,
+        "subprocess": False,
+        "writes": False,
+        "geometry_measurement": False,
+        "vehicle_analysis": False,
+        "container_checks": [".stl", ".gltf", ".glb", ".3mf", ".fcstd"],
+        "hashed_only": [".step", ".stp", "other"],
+    }
+
+
+@mcp.resource("design://project/assets")
+def project_assets() -> str:
+    """Return the configured root's file inventory."""
+    return json.dumps(list_files(_asset_root()), sort_keys=True)
+
+
+def main() -> None:
+    _asset_root()
+    mcp.run()
+
+
+if __name__ == "__main__":
+    main()
