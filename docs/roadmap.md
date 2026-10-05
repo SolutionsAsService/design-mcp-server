@@ -83,7 +83,8 @@ for the generic CAD development gates here. Do not mistake roadmap text for expo
    are implemented as user-proposed v2 project records; satisfying requirements,
    non-scalar configuration, a general dependency graph and independent evidence
    verification remain future gates. Snapshot and project-record flows
-   passed E: MCP stdio handshakes on 2026-10-05 (see project-record-verification.md).
+   passed E: MCP stdio handshakes on 2026-10-05; the v2 quantity flow passed on
+   2026-10-05 as well (see quantity-verification.md).
 
 ## Delivery sequence and gates
 
