@@ -78,6 +78,7 @@ for the generic CAD development gates here. Do not mistake roadmap text for expo
    `CURRENT` / `STALE` / `UNKNOWN` checks and reinspection categories. It is not yet a
    typed project model, a dependency graph, or engineering change propagation. Next,
    add explicit project/evidence schemas and typed revision-to-resource relationships.
+   A generic README/CAD snapshot passed an E: MCP stdio handshake on 2026-10-05.
 
 ## Delivery sequence and gates
 
