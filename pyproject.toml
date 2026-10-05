@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "design-mcp-server"
 version = "0.1.0"
-description = "Read-only project and static CAD asset catalog MCP"
+description = "Static CAD inspection and opt-in generic FreeCAD revision MCP"
 requires-python = ">=3.11"
 dependencies = ["mcp>=1.9.0,<2.0.0"]
 

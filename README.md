@@ -1,6 +1,6 @@
 # design-mcp-server
 
-A modular MCP engineering project. The current release is a read-only project asset catalog with bounded CAD mesh reasoning; it is the first increment, not the complete drone engineering platform.
+A modular MCP engineering project. The current release is a read-only project asset catalog with an opt-in generic FreeCAD revision writer; it is not a complete vehicle engineering platform.
 
 ## Current tools
 
@@ -10,10 +10,12 @@ A modular MCP engineering project. The current release is a read-only project as
 - `get_stl_entities(relative_path, entity, offset, limit)` pages faces, unique edges, or vertices.
 - `inspect_freecad_model(relative_path)` reads STEP BREP metrics or an FCStd model tree through FreeCAD's bundled Python (optional).
 - `measure_freecad_distance(relative_path, first_object, second_object)` finds minimum separation between two named FCStd shapes (optional FreeCAD runtime). Zero indicates contact **or** overlap, not verified clearance.
+- `create_box_revision(length_mm, width_mm, height_mm)` creates a new parametric FCStd box and a hash/provenance manifest under a separate, explicitly configured revision root; never modifies an input file.
+- `inspect_cad_revision(revision_id)` verifies the saved hash and reinspects the FCStd model.
 - `get_scope()` reports the implemented boundary.
 - Resource: `design://project/assets`.
 
-STL coordinates have unknown units. The mesh tool does not test self-intersections, infer materials, or validate engineering suitability. FreeCAD uses millimetres internally for STEP/FCStd geometry; no material or mass is inferred. No CAD authoring, vehicle engineering, electrical, propulsion, simulation, physical-hardware, or flight-test commands are available yet.
+STL coordinates have unknown units. The mesh tool does not test self-intersections, infer materials, or validate engineering suitability. FreeCAD uses millimetres internally for STEP/FCStd geometry; no material or mass is inferred. Box creation is the only CAD authoring operation; it does not validate manufacture or physical fit. No vehicle engineering, electrical, propulsion, simulation, physical-hardware, or flight-test commands are available.
 
 ## Setup
 
@@ -40,8 +42,12 @@ $env:TMP = $env:TEMP
 $env:FREECAD_USER_HOME = 'D:\New folder\OpenClaw\Apps\FreeCAD\user'
 ```
 
-Only `.step`, `.stp`, and `.fcstd` files within the configured asset root are accepted. Distance measurement requires `.fcstd` with two existing shape-bearing object names. The worker does not save files, but opening untrusted native CAD files through FreeCAD is not sandboxed; use trusted documents. Results are capped at 200 document objects, 10 closest point pairs, and 60 seconds per operation.
+Only `.step`, `.stp`, and `.fcstd` files within the configured asset root are accepted for inspection. Distance measurement requires `.fcstd` with two existing shape-bearing object names. Inspection does not save files, but opening untrusted native CAD files through FreeCAD is not sandboxed; use trusted documents. Results are capped at 200 document objects, 10 closest point pairs, and 60 seconds per operation.
+
+### Opt-in generic CAD revisions
+
+Set `DESIGN_MCP_REVISION_ROOT` to an **existing, dedicated non-symlink directory** separate from the asset root to enable `create_box_revision` and `inspect_cad_revision`. Keep this root on E: for this project; FreeCAD runtime and temp remain on D:. Each create returns a random revision ID and writes one `.fcstd` plus a JSON file containing dimensions in mm, SHA-256, and reopen geometry validation. The write is not a render, assembly check, or manufacturing approval. Treat the revision root as trusted: FreeCAD's process is not an OS sandbox.
 
 ## Scope and roadmap
 
-See [docs/scope.md](docs/scope.md) and [docs/roadmap.md](docs/roadmap.md) for the full requested product scope, implementation status, dependencies, and phase gates.
+See [docs/capability-audit.md](docs/capability-audit.md), [docs/scope.md](docs/scope.md) and [docs/roadmap.md](docs/roadmap.md) for the capability audit, gaps, full requested product scope, implementation status, dependencies, and phase gates.

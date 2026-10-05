@@ -12,6 +12,8 @@ from design_mcp.geometry import get_stl_entities as read_stl_entities
 from design_mcp.geometry import inspect_stl_geometry as inspect_stl
 from design_mcp.freecad import inspect_freecad as read_freecad
 from design_mcp.freecad import measure_freecad_distance as read_freecad_distance
+from design_mcp.cad_write import create_box_revision as write_box_revision
+from design_mcp.cad_write import inspect_revision as read_revision
 
 mcp = FastMCP("design-mcp-server")
 
@@ -23,6 +25,19 @@ def _asset_root() -> Path:
     root = Path(configured).resolve(strict=True)
     if not root.is_dir():
         raise RuntimeError("DESIGN_MCP_ASSET_ROOT must be a directory.")
+    return root
+
+
+def _revision_root() -> Path:
+    configured = os.environ.get("DESIGN_MCP_REVISION_ROOT")
+    if not configured:
+        raise RuntimeError("Set DESIGN_MCP_REVISION_ROOT to an existing dedicated output directory.")
+    root = Path(configured)
+    if root.is_symlink() or not root.is_dir():
+        raise RuntimeError("DESIGN_MCP_REVISION_ROOT must be an existing non-symlink directory.")
+    root = root.resolve(strict=True)
+    if root == _asset_root():
+        raise RuntimeError("Revision root must differ from the read-only asset root.")
     return root
 
 
@@ -63,13 +78,25 @@ def measure_freecad_distance(relative_path: str, first_object: str, second_objec
 
 
 @mcp.tool()
+def create_box_revision(length_mm: float, width_mm: float, height_mm: float) -> dict:
+    """Opt-in: save a new, parametric FreeCAD box to the separate revision root; never edit inputs."""
+    return write_box_revision(_revision_root(), length_mm, width_mm, height_mm)
+
+
+@mcp.tool()
+def inspect_cad_revision(revision_id: str) -> dict:
+    """Hash-check and inspect a saved revision from the dedicated output root."""
+    return read_revision(_revision_root(), revision_id)
+
+
+@mcp.tool()
 def get_scope() -> dict:
-    """Describe implemented capabilities and fixed read-only boundaries."""
+    """Describe implemented capabilities and write opt-in boundary."""
     return {
-        "mode": "READ_ONLY_ASSET_CATALOG_AND_CAD_GEOMETRY",
+        "mode": "READ_ONLY_ASSET_CATALOG_WITH_OPT_IN_CAD_REVISIONS",
         "network": False,
         "subprocess": "FreeCAD bundled Python only, when configured",
-        "writes": False,
+        "writes": "new generic FCStd revisions only when DESIGN_MCP_REVISION_ROOT is configured",
         "geometry_formats": ["STL triangulated surface mesh", "STEP BREP via FreeCAD", "FCStd feature tree and shape distance via FreeCAD"],
         "coordinate_units": "Unknown for STL; the format contains no unit metadata.",
         "self_intersection_test": False,

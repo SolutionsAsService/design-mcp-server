@@ -9,13 +9,14 @@ This repository is the long-term civilian design and engineering MCP project. Th
 - STL mesh topology and geometric metrics: triangle faces, unique vertices and edges, edge-connected shell count, boundary/non-manifold/orientation-conflict edges, axis-aligned bounds, surface area, surface centroid, and enclosed volume/volume centroid only for a closed consistently oriented mesh.
 - Paginated STL face, edge, and vertex records.
 - Read-only STEP/FCStd model summaries through configured FreeCAD bundled Python; FCStd named-shape minimum separation is implemented but awaits live fixture validation.
+- Opt-in creation of a new parametric FreeCAD box under a separate revision root, with a manifest and hash-checked reinspection; no modification of existing source assets.
 
 STL units are not encoded. Measurements are in raw model coordinates, with units explicitly UNKNOWN. The mesh inspector does not check self-intersections, infer materials/density, calculate mass properties, or establish that a mesh represents a manufacturable part. A closed mesh is not proof of engineering validity.
 
 ## Not implemented
 
-Detailed FreeCAD/STEP entity paging, CAD authoring, parametric feature regeneration, assembly constraints, component envelopes, manufacturer data ingestion, drone engineering calculations, KiCad, structural/thermal analysis, simulators/SITL, log analysis, manufacturing, and build package generation are not available tools. See the target architecture and gates in roadmap.md.
+Detailed FreeCAD/STEP entity paging, arbitrary CAD editing, parametric feature regeneration beyond the single box, assembly constraints, component envelopes, manufacturer data ingestion, drone engineering calculations, KiCad, structural/thermal analysis, simulators/SITL, log analysis, manufacturing, and build package generation are not available tools. See the target architecture and gates in roadmap.md.
 
 ## Execution and path boundaries
 
-The current server is read-only. It has no physical hardware actuation, arbitrary command execution, network access, or file writes. Tool paths must be relative to the configured root; absolute paths, parent traversal, and symlinks are rejected. Asset checks have size and mesh-triangle limits. STRUCTURE_VALID only reports supported file/container checks; it is not engineering validation.
+Asset reads remain read-only. New generic CAD documents may only be written under the explicitly configured revision root; it has no physical hardware actuation, arbitrary command execution, or network access. Asset paths must be relative to the configured root; absolute paths, parent traversal, and symlinks are rejected. Asset checks have size and mesh-triangle limits. STRUCTURE_VALID only reports supported file/container checks; it is not engineering validation.

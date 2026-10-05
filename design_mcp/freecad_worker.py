@@ -87,12 +87,37 @@ def measure_distance(path, first_name, second_name):
         FreeCAD.closeDocument(document.Name)
 
 
+def create_box(path, length, width, height):
+    document = FreeCAD.newDocument("DesignRevision")
+    try:
+        box = document.addObject("Part::Box", "Box")
+        box.Length = float(length)
+        box.Width = float(width)
+        box.Height = float(height)
+        document.recompute()
+        if not box.Shape.isValid() or not box.Shape.isClosed() or len(box.Shape.Solids) != 1:
+            raise ValueError("Generated shape is invalid.")
+        document.saveAs(path)
+    finally:
+        FreeCAD.closeDocument(document.Name)
+    reopened = FreeCAD.openDocument(path, True)
+    try:
+        saved_box = reopened.getObject("Box")
+        if saved_box is None or not saved_box.Shape.isValid():
+            raise ValueError("Saved document failed reopen validation.")
+        return {"format": "FCStd", "object": "Box", "shape": _shape_summary(saved_box.Shape)}
+    finally:
+        FreeCAD.closeDocument(reopened.Name)
+
+
 if __name__ == "__main__":
     operation = sys.argv[2] if len(sys.argv) > 2 else "inspect"
     if operation == "inspect" and len(sys.argv) == 3:
         result = inspect(sys.argv[1])
     elif operation == "distance" and len(sys.argv) == 5:
         result = measure_distance(sys.argv[1], sys.argv[3], sys.argv[4])
+    elif operation == "create_box" and len(sys.argv) == 6:
+        result = create_box(sys.argv[1], sys.argv[3], sys.argv[4], sys.argv[5])
     else:
         raise ValueError("Unsupported worker operation or argument count.")
     print("DESIGN_MCP_RESULT=" + json.dumps(result, allow_nan=False))

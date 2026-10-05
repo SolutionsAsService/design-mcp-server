@@ -69,8 +69,9 @@ for the generic CAD development gates here. Do not mistake roadmap text for expo
    from actual overlap and explicitly report unsupported inference.
 3. Add read-only BREP entity paging and section/preview export to a controlled scratch directory,
    retaining source hashes and strict resource limits.
-4. Implement opt-in *copy-on-write* parameter edits in an isolated output root with atomic saves,
-   revision manifest, reopen/check, preview and rollback; never mutate the source by default.
+4. Build on the opt-in new-box revision tool with *copy-on-write* parameter edits, preview,
+   comparison and rollback; never mutate the source by default. Current box creation reopens
+   geometry but has no render or parameter-edit loop.
 5. Add project/provenance manifests and change-impact tracking before component or assembly claims.
 
 ## Delivery sequence and gates
@@ -78,7 +79,7 @@ for the generic CAD development gates here. Do not mistake roadmap text for expo
 1. **Phase 0 - MCP foundation (complete):** stdio server, configured read-only root, safe path resolution, SHA-256, file/container checks, unit tests.
 2. **Phase 1A - mesh CAD reasoning (complete):** bounded STL topology/entity queries and geometric metrics. Gate: deterministic closed/open mesh tests; unknown units remain explicit; no unsupported physical claims.
 3. **Phase 1B - native CAD reasoning (in progress):** read-only FreeCAD document/model tree and BREP summaries, plus FCStd shape-to-shape separation. FreeCAD 1.1.4 bundled Python was verified on D:; real-file integration tests are still required before claiming live validation.
-4. **Phase 1C - CAD change transactions:** branch/copy a document, parameter edits, revision snapshots, re-open/render/measure/compare, rollback on failure. Depends on Phase 1B.
+4. **Phase 1C - CAD change transactions (started):** new parametric box document with dedicated output root, hash manifest and reopen verification; source-copy, parameter edits, rendering, comparison, and rollback are not yet available.
 5. **Phase 2 - project and provenance core:** typed project/configuration/requirements, component and resource schemas, unit normalization, confidence/provenance, revision and change-impact graph.
 6. **Phase 3 - component envelopes and assembly:** manufacturer-backed records, CAD/envelope links, assembly instances and fit/access/collision checks. Requires validated geometry and component data.
 7. **Phase 4 - engineering analysis:** mass/CG/inertia, electrical/power/wiring, propulsion test-data ingestion, thermal/vibration/structural methods. Each calculator has unit tests, explicit evidence status, and bounded applicability.
@@ -91,4 +92,4 @@ for the generic CAD development gates here. Do not mistake roadmap text for expo
 - FreeCAD 1.1.4 is installed on D:, but its adapter still needs an approved live test on actual STEP and FCStd files.
 - STEP shape summaries are implemented; native feature trees, material, physical mass properties, and CAD modification are not available.
 - No verified drone project/component dataset is bundled; the tools must not fabricate example manufacturer specifications.
-- End-to-end CAD edit/render/inspect/rollback is a future acceptance gate, not a current capability.
+- End-to-end CAD edit/render/inspect/rollback is a future acceptance gate, not a current capability. New-box creation is unit-tested but requires a live FreeCAD test.
