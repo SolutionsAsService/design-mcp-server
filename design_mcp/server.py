@@ -24,6 +24,10 @@ from design_mcp.preview import inspect_cad_preview as read_cad_preview
 from design_mcp.project_snapshot import create_project_snapshot as write_snapshot
 from design_mcp.project_snapshot import inspect_project_snapshot as read_snapshot
 from design_mcp.project_snapshot import list_project_snapshots as read_snapshots
+from design_mcp.project_records import create_project_record as write_project_record
+from design_mcp.project_records import add_project_evidence as write_project_evidence
+from design_mcp.project_records import inspect_project_record as read_project_record
+from design_mcp.project_records import list_project_records as read_project_records
 
 mcp = FastMCP("design-mcp-server")
 
@@ -175,13 +179,41 @@ def list_project_snapshots(offset: int = 0, limit: int = 10) -> dict:
 
 
 @mcp.tool()
+def create_project_record(name: str, description: str, snapshot_id: str) -> dict:
+    """Create an immutable generic project record from a CURRENT snapshot."""
+    return write_project_record(_asset_root(), _revision_root(), name, description, snapshot_id)
+
+
+@mcp.tool()
+def add_project_evidence(project_id: str, subject_kind: str, subject_reference: str,
+                         source_asset_path: str, claim: str, evidence_status: str,
+                         value: float | None = None, unit: str | None = None) -> dict:
+    """Create a new project revision with user-attested evidence linked to snapshot references."""
+    return write_project_evidence(_asset_root(), _revision_root(), project_id,
+                                  subject_kind, subject_reference, source_asset_path,
+                                  claim, evidence_status, value, unit)
+
+
+@mcp.tool()
+def inspect_project_record(project_id: str) -> dict:
+    """Check project, parent and snapshot hashes; mark directly impacted evidence links."""
+    return read_project_record(_asset_root(), _revision_root(), project_id)
+
+
+@mcp.tool()
+def list_project_records(offset: int = 0, limit: int = 10) -> dict:
+    """Page hash-checked immutable project records, not engineering approvals."""
+    return read_project_records(_revision_root(), offset, limit)
+
+
+@mcp.tool()
 def get_scope() -> dict:
     """Describe implemented capabilities and write opt-in boundary."""
     return {
         "mode": "READ_ONLY_ASSET_CATALOG_WITH_OPT_IN_CAD_REVISIONS",
         "network": False,
         "subprocess": "FreeCAD bundled Python only, when configured",
-        "writes": "new generic FCStd revisions, bounded snapshot manifests and SVG previews only with configured output roots",
+        "writes": "new generic FCStd revisions, bounded snapshot/project records and SVG previews only with configured output roots",
         "geometry_formats": ["STL triangulated surface mesh", "STEP BREP via FreeCAD", "FCStd feature tree and shape distance via FreeCAD"],
         "coordinate_units": "Unknown for STL; the format contains no unit metadata.",
         "self_intersection_test": False,
@@ -211,6 +243,14 @@ def project_snapshots() -> str:
     if not os.environ.get("DESIGN_MCP_REVISION_ROOT"):
         return json.dumps({"status": "CONFIGURATION_REQUIRED", "snapshots": []})
     return json.dumps(read_snapshots(_revision_root()), sort_keys=True)
+
+
+@mcp.resource("design://project/records")
+def project_records() -> str:
+    """Return bounded project record summaries or configuration required."""
+    if not os.environ.get("DESIGN_MCP_REVISION_ROOT"):
+        return json.dumps({"status": "CONFIGURATION_REQUIRED", "projects": []})
+    return json.dumps(read_project_records(_revision_root()), sort_keys=True)
 
 
 def main() -> None:
