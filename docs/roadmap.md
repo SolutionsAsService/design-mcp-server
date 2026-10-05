@@ -88,7 +88,8 @@ for the generic CAD development gates here. Do not mistake roadmap text for expo
 6. Add conservative read-only FCStd envelope-pair checks as the first assembly
    geometry slice. Missing/overlapping AABBs must stay UNKNOWN. Manufacturer-backed
    component records, placements/constraints and tolerance-aware fit still require
-   trusted source data and separate acceptance tests.
+   trusted source data and separate acceptance tests. Live MCP envelope verification
+   is pending after a worker timeout and a denied direct run (envelope-verification.md).
 
 ## Delivery sequence and gates
 
