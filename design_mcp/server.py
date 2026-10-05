@@ -14,6 +14,8 @@ from design_mcp.freecad import inspect_freecad as read_freecad
 from design_mcp.freecad import measure_freecad_distance as read_freecad_distance
 from design_mcp.cad_write import create_box_revision as write_box_revision
 from design_mcp.cad_write import inspect_revision as read_revision
+from design_mcp.cad_write import revise_box_parameters as write_box_parameters
+from design_mcp.cad_write import compare_box_revisions as compare_box_models
 
 mcp = FastMCP("design-mcp-server")
 
@@ -87,6 +89,19 @@ def create_box_revision(length_mm: float, width_mm: float, height_mm: float) -> 
 def inspect_cad_revision(revision_id: str) -> dict:
     """Hash-check and inspect a saved revision from the dedicated output root."""
     return read_revision(_revision_root(), revision_id)
+
+
+@mcp.tool()
+def revise_box_parameters(parent_revision_id: str, length_mm: float, width_mm: float,
+                          height_mm: float) -> dict:
+    """Save a new parameterized box revision without overwriting its hash-checked parent."""
+    return write_box_parameters(_revision_root(), parent_revision_id, length_mm, width_mm, height_mm)
+
+
+@mcp.tool()
+def compare_box_revisions(first_revision_id: str, second_revision_id: str) -> dict:
+    """Compare dimensions of two hash-checked box revisions without editing either."""
+    return compare_box_models(_revision_root(), first_revision_id, second_revision_id)
 
 
 @mcp.tool()

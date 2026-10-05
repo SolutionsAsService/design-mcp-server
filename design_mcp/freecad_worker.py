@@ -87,10 +87,11 @@ def measure_distance(path, first_name, second_name):
         FreeCAD.closeDocument(document.Name)
 
 
-def create_box(path, length, width, height):
-    document = FreeCAD.newDocument("DesignRevision")
+def _save_box(document, path, length, width, height):
     try:
-        box = document.addObject("Part::Box", "Box")
+        box = document.getObject("Box")
+        if box is None or box.TypeId != "Part::Box" or len(document.Objects) != 1:
+            raise ValueError("Expected one generated parametric Part::Box.")
         box.Length = float(length)
         box.Width = float(width)
         box.Height = float(height)
@@ -110,6 +111,18 @@ def create_box(path, length, width, height):
         FreeCAD.closeDocument(reopened.Name)
 
 
+def create_box(path, length, width, height):
+    document = FreeCAD.newDocument("DesignRevision")
+    document.addObject("Part::Box", "Box")
+    return _save_box(document, path, length, width, height)
+
+
+def revise_box(path, source, length, width, height):
+    if not source.lower().endswith(".fcstd"):
+        raise ValueError("Expected an FCStd source revision.")
+    return _save_box(FreeCAD.openDocument(source, True), path, length, width, height)
+
+
 if __name__ == "__main__":
     operation = sys.argv[2] if len(sys.argv) > 2 else "inspect"
     if operation == "inspect" and len(sys.argv) == 3:
@@ -118,6 +131,8 @@ if __name__ == "__main__":
         result = measure_distance(sys.argv[1], sys.argv[3], sys.argv[4])
     elif operation == "create_box" and len(sys.argv) == 6:
         result = create_box(sys.argv[1], sys.argv[3], sys.argv[4], sys.argv[5])
+    elif operation == "revise_box" and len(sys.argv) == 7:
+        result = revise_box(sys.argv[1], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
     else:
         raise ValueError("Unsupported worker operation or argument count.")
     print("DESIGN_MCP_RESULT=" + json.dumps(result, allow_nan=False))

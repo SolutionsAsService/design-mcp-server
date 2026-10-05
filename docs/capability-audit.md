@@ -41,7 +41,7 @@ The broader architecture, prospective capabilities, and dependencies are in `roa
 | Priority | Proposed MCP interface | Dependency | Gate |
 | --- | --- | --- | --- |
 | Implemented | `create_box_revision`, `inspect_cad_revision` | Separate revision root and D: FreeCAD Python | Generic 2 × 3 × 4 mm FCStd created and reopened; hash checked |
-| Next | `revise_box_parameters`, `compare_cad_revisions` | Verified current writer | Original unchanged; before/after dimensions and hashes recorded |
+| In development | `revise_box_parameters`, `compare_box_revisions` | Verified current writer | Original unchanged; before/after dimensions and hashes recorded; live test pending |
 | Next | `render_cad_revision`, `design://project/revisions` | Proven headless renderer and bounded image output | Image can be independently inspected and tied to revision hash |
 | Later | `inspect_kicad_project`, `design://project/electronics` | KiCad CLI version/API discovery | Read-only fixture, ERC/DRC evidence, source revision recorded |
 | Later | `design://project/current`, `design://project/validation` | Persistent project/provenance schema | Missing data produces UNKNOWN; stale results marked explicitly |

@@ -9,7 +9,7 @@ This repository is the long-term civilian design and engineering MCP project. Th
 - STL mesh topology and geometric metrics: triangle faces, unique vertices and edges, edge-connected shell count, boundary/non-manifold/orientation-conflict edges, axis-aligned bounds, surface area, surface centroid, and enclosed volume/volume centroid only for a closed consistently oriented mesh.
 - Paginated STL face, edge, and vertex records.
 - Read-only STEP/FCStd model summaries through configured FreeCAD bundled Python; FCStd named-shape minimum separation is implemented but awaits live fixture validation.
-- Opt-in creation of a new parametric FreeCAD box under a separate revision root, with a manifest and hash-checked reinspection; no modification of existing source assets.
+- Opt-in creation and copy-on-write parameter revision of a generated FreeCAD box under a separate revision root, with manifests, hash-checked reinspection, and dimension comparison; no modification of existing source assets.
 
 STL units are not encoded. Measurements are in raw model coordinates, with units explicitly UNKNOWN. The mesh inspector does not check self-intersections, infer materials/density, calculate mass properties, or establish that a mesh represents a manufacturable part. A closed mesh is not proof of engineering validity.
 
