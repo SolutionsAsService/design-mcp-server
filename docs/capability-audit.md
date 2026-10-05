@@ -1,14 +1,16 @@
 # Capability audit — 2026-10-05
 
-Audited baseline: `3b411e9` on `main`; canonical checkout `E:\design-mcp-server`. This is an
-implementation audit, not an assertion that any particular vehicle design is validated.
+Historical audited baseline: `3b411e9` on `main`; canonical checkout `E:\design-mcp-server`.
+The inventory below records that baseline, not the current tool count. See scope.md,
+roadmap.md and native-cad-verification.md for later increments and live evidence. This is
+not an assertion that any particular vehicle design is validated.
 
 | Area | What exists | Evidence / limitation |
 | --- | --- | --- |
 | MCP surface | Seven tools: `list_assets`, `inspect_asset`, `inspect_stl_geometry`, `get_stl_entities`, `inspect_freecad_model`, `measure_freecad_distance`, `get_scope`; one resource `design://project/assets` | Registered in `design_mcp/server.py`; no MCP prompts or project-specific resources |
 | Project/schema | Configured read-only filesystem root; dictionaries returned by tools | No persistent project model, component schema, revision registry, provenance graph or normalized engineering units |
-| CAD files | STL topology/metrics and paginated faces/edges/vertices; STEP shape summaries and FCStd object tree via FreeCAD | STL units are unknown. STEP lacks original feature history. FCStd minimum shape distance is unit-tested with mocks, not proven against a real fixture |
-| CAD runtime | FreeCAD 1.1.4 bundled Python on D: was previously version/API checked | A previous live fixture command was denied; do not claim end-to-end proof |
+| CAD files | STL topology/metrics and paginated faces/edges/vertices; STEP shape summaries and FCStd object tree via FreeCAD | At this historical baseline STL units were unknown and FCStd distance lacked a live fixture; later evidence is in native-cad-verification.md |
+| CAD runtime | FreeCAD 1.1.4 bundled Python on D: was previously version/API checked | This baseline preceded the subsequent live fixture test documented in native-cad-verification.md |
 | Tests | 15 `unittest` cases pass in the E: virtualenv; catalog/mesh deterministic, FreeCAD subprocess mocked | No CAD fixture integration suite or image/section comparison |
 | Dependencies | Python >=3.11, `mcp>=1.9,<2`, standard-library geometry; optional separately configured FreeCAD Python | No NumPy, Pydantic, KiCad, simulator or network research client installed by this project |
 | Execution | Read-only path confinement and file-size caps; FreeCAD subprocess timeout 60 s | FreeCAD opening an untrusted file is not sandboxed; server not registered with OpenClaw |

@@ -64,10 +64,10 @@ for the generic CAD development gates here. Do not mistake roadmap text for expo
 
 ### Next generic CAD milestones
 
-1. Prove STEP and FCStd inspection against actual fixtures on the target Windows runtime.
+1. STEP and FCStd inspection passed with actual generic fixtures on the target Windows runtime (2026-10-05).
 2. Bounded FCStd shape-to-shape separation now reports positive volumetric intersection separately
    from zero distance without measurable intersection. This is not a contact or clearance certification;
-   non-solids and failed booleans remain unknown pending live-fixture acceptance.
+   non-solids and failed booleans remain unknown. Live fixture acceptance passed for closed boxes.
 3. Read-only BREP entity paging and a hash-linked, bounded SVG wireframe preview are implemented.
    Section views and visually inspected render output remain future acceptance gates.
 4. Continue from the copy-on-write box edit and dimension comparison with preview,
@@ -80,7 +80,7 @@ for the generic CAD development gates here. Do not mistake roadmap text for expo
 
 1. **Phase 0 - MCP foundation (complete):** stdio server, configured read-only root, safe path resolution, SHA-256, file/container checks, unit tests.
 2. **Phase 1A - mesh CAD reasoning (complete):** bounded STL topology/entity queries and geometric metrics. Gate: deterministic closed/open mesh tests; unknown units remain explicit; no unsupported physical claims.
-3. **Phase 1B - native CAD reasoning (in progress):** read-only FreeCAD document/model tree and BREP summaries, plus FCStd shape-to-shape separation. FreeCAD 1.1.4 bundled Python was verified on D:; real-file integration tests are still required before claiming live validation.
+3. **Phase 1B - native CAD reasoning (bounded implementation):** read-only FreeCAD document/model tree and BREP summaries, plus FCStd shape-to-shape separation and conditional solid intersection volume. FreeCAD 1.1.4 bundled Python on D: passed generic STEP/FCStd live fixtures; material properties, feature history from STEP, section views and general engineering clearance remain unavailable.
 4. **Phase 1C - CAD change transactions (in progress):** dedicated output root, hash manifest, parent-preserving box parameter edits, reopen verification and dimension comparison; rendering, arbitrary source-copy edits and rollback are not yet available.
 5. **Phase 2 - project and provenance core:** typed project/configuration/requirements, component and resource schemas, unit normalization, confidence/provenance, revision and change-impact graph.
 6. **Phase 3 - component envelopes and assembly:** manufacturer-backed records, CAD/envelope links, assembly instances and fit/access/collision checks. Requires validated geometry and component data.
@@ -91,7 +91,7 @@ for the generic CAD development gates here. Do not mistake roadmap text for expo
 
 ## Current blockers and next checks
 
-- FreeCAD 1.1.4 is installed on D:, but its adapter still needs an approved live test on actual STEP and FCStd files.
+- FreeCAD 1.1.4 on D: passed real STEP/FCStd generic fixture inspection, BREP face paging, and separated/touching/overlapping box checks on 2026-10-05 (see native-cad-verification.md); arbitrary real assemblies and visual previews remain unverified.
 - STEP shape summaries and bounded BREP paging are implemented; native feature histories, material and physical mass properties are unavailable, and CAD editing is limited to generated parametric boxes.
 - No verified drone project/component dataset is bundled; the tools must not fabricate example manufacturer specifications.
 - End-to-end CAD edit/render/inspect/rollback is a future acceptance gate, not a current capability. Generic box creation, parent-preserving edit/reinspection, and a hash-linked SVG wireframe export passed live FreeCAD fixture tests on 2026-10-05. The preview was not visually reviewed; hidden surfaces and sections are not handled.
