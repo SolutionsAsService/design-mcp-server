@@ -155,6 +155,18 @@ class CadRevisionTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "not a verified ancestor"):
             rollback_box_revision(self.root, first["revision_id"], second["revision_id"], self.python)
 
+        target_manifest = self.root / f"revision-{first['revision_id']}.json"
+        original_target = target_manifest.read_text(encoding="utf-8")
+        target_record = json.loads(original_target)
+        target_record["dimensions_mm"]["length"] = 9
+        target_manifest.write_text(json.dumps(target_record), encoding="utf-8")
+        with (patch("design_mcp.cad_write.inspect_freecad", side_effect=fake_inspection),
+              patch("design_mcp.cad_write.subprocess.run") as blocked):
+            with self.assertRaisesRegex(ValueError, "does not match recorded dimensions"):
+                rollback_box_revision(self.root, third["revision_id"], first["revision_id"], self.python)
+            blocked.assert_not_called()
+        target_manifest.write_text(original_target, encoding="utf-8")
+
         manifest_path = self.root / f"revision-{third['revision_id']}.json"
         record = json.loads(manifest_path.read_text(encoding="utf-8"))
         record["parent_sha256"] = "0" * 64

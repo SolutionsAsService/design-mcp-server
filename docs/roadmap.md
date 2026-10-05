@@ -72,7 +72,8 @@ for the generic CAD development gates here. Do not mistake roadmap text for expo
    Section views and visually inspected render output remain future acceptance gates.
 4. Continue from the copy-on-write box edit and dimension comparison with preview and
    visual inspection; ancestor-only parametric box rollback creates a verified child revision.
-   Arbitrary CAD undo remains unavailable; edits reopen geometry but do not render or certify fit.
+   Live FreeCAD verification passed on 2026-10-05. Arbitrary CAD undo remains unavailable;
+   edits reopen geometry but do not visually render or certify fit.
 5. Extend the bounded CAD revision index and resource with project/provenance manifests and
    change-impact tracking before component or assembly claims. Current index is not a project model.
 
@@ -94,4 +95,4 @@ for the generic CAD development gates here. Do not mistake roadmap text for expo
 - FreeCAD 1.1.4 on D: passed real STEP/FCStd generic fixture inspection, BREP face paging, and separated/touching/overlapping box checks on 2026-10-05 (see native-cad-verification.md); arbitrary real assemblies and visual previews remain unverified.
 - STEP shape summaries and bounded BREP paging are implemented; native feature histories, material and physical mass properties are unavailable, and CAD editing is limited to generated parametric boxes.
 - No verified drone project/component dataset is bundled; the tools must not fabricate example manufacturer specifications.
-- End-to-end CAD edit/render/inspect/rollback is a future acceptance gate, not a current capability. Generic box creation, parent-preserving edit/reinspection, and a hash-linked SVG wireframe export passed live FreeCAD fixture tests on 2026-10-05. Ancestor-only box rollback needs its own live gate. The preview was not visually reviewed; hidden surfaces and sections are not handled.
+- End-to-end CAD edit/render/inspect/rollback is a future acceptance gate, not a current capability. Generic box creation, parent-preserving edit/reinspection, ancestor-only box rollback, and a hash-linked SVG wireframe export passed live FreeCAD fixture tests on 2026-10-05 (see rollback-verification.md). The preview was not visually reviewed; hidden surfaces and sections are not handled.
