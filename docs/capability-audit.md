@@ -14,7 +14,7 @@ The earlier seven-tool audit remains recoverable in Git history.
 | Provenance snapshots | Opt-in bounded SHA-256 manifests for up to 20 generic asset/revision references; paged listing and change/missing/unknown recheck | Live snapshot of README plus a generated CAD revision returned CURRENT; neither a typed project nor a dependency graph (`snapshot-verification.md`) |
 | Typed generic project/evidence | Immutable project records tied to a hash-checked snapshot; at most 20 source/subject evidence links with explicit units and user-attested statuses | Live E: MCP project/evidence flow passed; no independent claim validation, typed requirements or dependency graph (`project-record-verification.md`) |
 | Preview | Hash-linked 640×480 SVG wireframe for generated box revisions | Live export and integrity check passed; visual approval, hidden-line removal and sections absent (`preview-verification.md`) |
-| Tests/dependencies | 40 `unittest` tests pass locally; Python >=3.11 and `mcp>=1.9,<2`; optional FreeCAD 1.1.4 on D: | 39 passed on E: before the added changed-CAD regression test; final E: run pending; no new runtime dependency |
+| Tests/dependencies | 40 `unittest` tests pass locally and on E:; Python >=3.11 and `mcp>=1.9,<2`; optional FreeCAD 1.1.4 on D: | No new runtime dependency |
 | Runtime | Read-only asset root, opt-in separate revision/preview roots, 60-second FreeCAD subprocess limit | FreeCAD file opening is not sandboxed; no physical hardware actuation; no proven OpenClaw registration of the newest tool |
 
 ## Gaps and next gated step

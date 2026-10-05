@@ -14,7 +14,7 @@ manufacturer data or aircraft design was involved.
   `USER_ATTESTED_NOT_INDEPENDENTLY_CHECKED`.
 - The client read `design://project/records`. Parent versions and source files
   were not overwritten. All **39 tests** passed on E: before this live run;
-  one further changed-CAD-subject regression test was added afterward.
+  after adding a changed-CAD-subject regression test, all **40** passed on E:.
 
 These records have typed source/subject relationships, not a general
 dependency graph, manufacturer verification, engineering validation or a
