@@ -12,6 +12,7 @@ from design_mcp.geometry import get_stl_entities as read_stl_entities
 from design_mcp.geometry import inspect_stl_geometry as inspect_stl
 from design_mcp.freecad import inspect_freecad as read_freecad
 from design_mcp.freecad import measure_freecad_distance as read_freecad_distance
+from design_mcp.freecad import get_freecad_entities as read_freecad_entities
 from design_mcp.cad_write import create_box_revision as write_box_revision
 from design_mcp.cad_write import inspect_revision as read_revision
 from design_mcp.cad_write import revise_box_parameters as write_box_parameters
@@ -78,6 +79,13 @@ def inspect_freecad_model(relative_path: str) -> dict:
 def measure_freecad_distance(relative_path: str, first_object: str, second_object: str) -> dict:
     """Measure the nearest separation between two named FCStd shapes, without modifying the document."""
     return read_freecad_distance(_asset_root(), relative_path, first_object, second_object)
+
+
+@mcp.tool()
+def get_freecad_entities(relative_path: str, entity: str, object_name: str = "",
+                         offset: int = 0, limit: int = 25) -> dict:
+    """Page bounded STEP/FCStd BREP entity measurements (not a manufacturing validation)."""
+    return read_freecad_entities(_asset_root(), relative_path, entity, object_name, offset, limit)
 
 
 @mcp.tool()

@@ -9,6 +9,7 @@ A modular MCP engineering project. The current release is a read-only project as
 - `inspect_stl_geometry(relative_path)` reports STL triangle topology, bounds, surface area, and only computes enclosed volume when the mesh is closed and consistently oriented.
 - `get_stl_entities(relative_path, entity, offset, limit)` pages faces, unique edges, or vertices.
 - `inspect_freecad_model(relative_path)` reads STEP BREP metrics or an FCStd model tree through FreeCAD's bundled Python (optional).
+- `get_freecad_entities(relative_path, entity, object_name="", offset=0, limit=25)` pages BREP faces, edges, vertices, shells and solids. FCStd requires an object name; STEP does not. Maximum 50 records.
 - `measure_freecad_distance(relative_path, first_object, second_object)` finds minimum separation between two named FCStd shapes (optional FreeCAD runtime). Zero indicates contact **or** overlap, not verified clearance.
 - `create_box_revision(length_mm, width_mm, height_mm)` creates a new parametric FCStd box and a hash/provenance manifest under a separate, explicitly configured revision root; never modifies an input file.
 - `inspect_cad_revision(revision_id)` verifies the saved hash and reinspects the FCStd model.
@@ -45,7 +46,7 @@ $env:TMP = $env:TEMP
 $env:FREECAD_USER_HOME = 'D:\New folder\OpenClaw\Apps\FreeCAD\user'
 ```
 
-Only `.step`, `.stp`, and `.fcstd` files within the configured asset root are accepted for inspection. Distance measurement requires `.fcstd` with two existing shape-bearing object names. Inspection does not save files, but opening untrusted native CAD files through FreeCAD is not sandboxed; use trusted documents. Results are capped at 200 document objects, 10 closest point pairs, and 60 seconds per operation.
+Only `.step`, `.stp`, and `.fcstd` files within the configured asset root are accepted for inspection. Distance measurement requires `.fcstd` with two existing shape-bearing object names. Entity pages are geometric records, not drawings or assembly validation. Inspection does not save files, but opening untrusted native CAD files through FreeCAD is not sandboxed; use trusted documents. Results are capped at 200 document objects, 10 closest point pairs, and 60 seconds per operation.
 
 ### Opt-in generic CAD revisions
 

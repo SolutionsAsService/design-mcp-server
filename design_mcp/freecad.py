@@ -47,3 +47,25 @@ def measure_freecad_distance(root: str | Path, relative_path: str, first_object:
         raise ValueError("Distance measurement requires an FCStd document with two named objects.")
     return _run_worker(root, relative_path, "distance", first_object, second_object,
                        python_executable=python_executable)
+
+
+def get_freecad_entities(root: str | Path, relative_path: str, entity: str,
+                         object_name: str = "", offset: int = 0, limit: int = 25,
+                         python_executable: str | Path | None = None) -> dict:
+    if entity not in {"faces", "edges", "vertices", "solids", "shells"}:
+        raise ValueError("Entity must be faces, edges, vertices, solids or shells.")
+    if isinstance(offset, bool) or not isinstance(offset, int) or offset < 0 or offset > 1000000:
+        raise ValueError("Offset must be a nonnegative integer at most 1000000.")
+    if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 50:
+        raise ValueError("Limit must be an integer between 1 and 50.")
+    suffix = Path(relative_path).suffix.lower()
+    if suffix == ".fcstd":
+        if not object_name or len(object_name) > 128:
+            raise ValueError("Specify an FCStd object name, at most 128 characters.")
+    elif suffix in {".step", ".stp"}:
+        if object_name:
+            raise ValueError("STEP files do not contain FreeCAD document object names.")
+    else:
+        raise ValueError("Expected an FCStd or STEP file.")
+    return _run_worker(root, relative_path, "entities", entity, object_name,
+                       str(offset), str(limit), python_executable=python_executable)

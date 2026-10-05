@@ -87,6 +87,48 @@ def measure_distance(path, first_name, second_name):
         FreeCAD.closeDocument(document.Name)
 
 
+def _bounds(shape):
+    bounds = shape.BoundBox
+    return {"minimum": [bounds.XMin, bounds.YMin, bounds.ZMin],
+            "maximum": [bounds.XMax, bounds.YMax, bounds.ZMax]}
+
+
+def get_entities(path, entity, object_name, offset, limit):
+    if path.lower().endswith((".step", ".stp")):
+        shape = Part.read(path)
+        document = None
+    else:
+        document = FreeCAD.openDocument(path, True)
+        feature = document.getObject(object_name)
+        if feature is None or not hasattr(feature, "Shape") or feature.Shape.isNull():
+            FreeCAD.closeDocument(document.Name)
+            raise ValueError("Expected an existing object with a non-null shape.")
+        shape = feature.Shape
+    try:
+        items = getattr(shape, "Vertexes" if entity == "vertices" else entity.capitalize())
+        records = []
+        for index in range(offset, min(len(items), offset + limit)):
+            item = items[index]
+            record = {"index": index}
+            if entity == "vertices":
+                record["point_mm"] = _vector(item.Point)
+            else:
+                record["bounding_box_mm"] = _bounds(item)
+                if entity == "edges":
+                    record["length_mm"] = item.Length
+                elif entity in {"faces", "shells"}:
+                    record["area_mm2"] = item.Area
+                elif entity == "solids":
+                    record["volume_mm3"] = item.Volume if item.isValid() and item.isClosed() else None
+            records.append(record)
+        return {"format": "STEP" if document is None else "FCStd", "object": object_name or None,
+                "entity": entity, "count": len(items), "offset": offset, "limit": limit,
+                "has_more": offset + limit < len(items), "items": records}
+    finally:
+        if document is not None:
+            FreeCAD.closeDocument(document.Name)
+
+
 def _save_box(document, path, length, width, height):
     try:
         box = document.getObject("Box")
@@ -129,6 +171,9 @@ if __name__ == "__main__":
         result = inspect(sys.argv[1])
     elif operation == "distance" and len(sys.argv) == 5:
         result = measure_distance(sys.argv[1], sys.argv[3], sys.argv[4])
+    elif operation == "entities" and len(sys.argv) == 7:
+        result = get_entities(sys.argv[1], sys.argv[3], sys.argv[4],
+                              int(sys.argv[5]), int(sys.argv[6]))
     elif operation == "create_box" and len(sys.argv) == 6:
         result = create_box(sys.argv[1], sys.argv[3], sys.argv[4], sys.argv[5])
     elif operation == "revise_box" and len(sys.argv) == 7:

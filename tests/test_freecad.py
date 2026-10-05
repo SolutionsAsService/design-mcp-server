@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from design_mcp.freecad import inspect_freecad, measure_freecad_distance
+from design_mcp.freecad import get_freecad_entities, inspect_freecad, measure_freecad_distance
 
 
 class FreeCADAdapterTests(unittest.TestCase):
@@ -65,6 +65,32 @@ class FreeCADAdapterTests(unittest.TestCase):
     def test_rejects_missing_runtime(self) -> None:
         with self.assertRaises(RuntimeError):
             inspect_freecad(self.root, "sample.step", self.root / "missing-python.exe")
+
+    def test_entity_paging_rejects_invalid_inputs_before_worker(self) -> None:
+        with patch("design_mcp.freecad.subprocess.run") as runner:
+            for path, entity, name, offset, limit in [
+                ("sample.step", "wires", "", 0, 10),
+                ("sample.step", "faces", "Box", 0, 10),
+                ("sample.fcstd", "faces", "", 0, 10),
+                ("sample.fcstd", "faces", "Box", -1, 10),
+                ("sample.fcstd", "faces", "Box", 0, 51),
+                ("../sample.fcstd", "faces", "Box", 0, 10),
+            ]:
+                with self.assertRaises(ValueError):
+                    get_freecad_entities(self.root, path, entity, name, offset, limit,
+                                         self.root / "python.exe")
+            runner.assert_not_called()
+
+    def test_entity_paging_calls_worker_with_explicit_limits(self) -> None:
+        with patch("design_mcp.freecad.subprocess.run") as runner:
+            runner.return_value.stdout = ('DESIGN_MCP_RESULT={"entity":"vertices",'
+                                          '"count":8,"items":[]}\n')
+            runner.return_value.returncode = 0
+            page = get_freecad_entities(self.root, "sample.fcstd", "vertices", "Box", 2, 3,
+                                        self.root / "python.exe")
+        self.assertEqual(page["entity"], "vertices")
+        self.assertEqual(runner.call_args.args[0][-6:],
+                         [str(self.root / "sample.fcstd"), "entities", "vertices", "Box", "2", "3"])
 
 
 if __name__ == "__main__":
