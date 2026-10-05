@@ -13,12 +13,13 @@ This repository is the long-term civilian design and engineering MCP project. Th
 - Opt-in SVG wireframe export for generated box revisions to a third scratch root, with source/preview hashes and non-visual integrity reinspection. This is a CAD-derived projection, not a photorealistic render.
 - Opt-in bounded project snapshots referencing SHA-256-checked assets and CAD revisions, with snapshot listing and content-change status; this is a provenance index, not a typed project or an engineering dependency graph.
 - Opt-in typed, immutable generic project records tied to one snapshot, with source/subject evidence links and user-attested statuses/explicit supported units. Directly changed references trigger reinspection flags, not automatic validation or a general dependency graph.
+- Source-linked, proposed scalar requirements and configuration parameters in v2 project records, with strict same-dimension conversions and explicit canonical quantities; no requirement satisfaction or design approval is computed.
 
 STL units are not encoded. Measurements are in raw model coordinates, with units explicitly UNKNOWN. The mesh inspector does not check self-intersections, infer materials/density, calculate mass properties, or establish that a mesh represents a manufacturable part. A closed mesh is not proof of engineering validity.
 
 ## Not implemented
 
-Unbounded FreeCAD/STEP entity access, arbitrary CAD editing, parametric feature regeneration beyond the single box, typed requirements/configuration, unit conversions, assembly constraints, component envelopes, manufacturer data ingestion, drone engineering calculations, KiCad, structural/thermal analysis, simulators/SITL, log analysis, manufacturing, and build package generation are not available tools. See the target architecture and gates in roadmap.md.
+Unbounded FreeCAD/STEP entity access, arbitrary CAD editing, parametric feature regeneration beyond the single box, requirement validation, non-scalar configuration, general unit algebra, assembly constraints, component envelopes, manufacturer data ingestion, drone engineering calculations, KiCad, structural/thermal analysis, simulators/SITL, log analysis, manufacturing, and build package generation are not available tools. See the target architecture and gates in roadmap.md.
 
 ## Execution and path boundaries
 

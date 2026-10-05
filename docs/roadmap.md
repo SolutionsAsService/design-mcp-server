@@ -79,8 +79,10 @@ for the generic CAD development gates here. Do not mistake roadmap text for expo
    typed project model, a dependency graph, or engineering change propagation. Next,
    immutable typed generic project/evidence records now link claims to existing snapshot
    assets or CAD revisions, preserving explicit units and user-attested statuses.
-   A general dependency graph, typed requirements/configuration and independent
-   evidence verification remain future gates. Snapshot and project-record flows
+   Typed scalar requirements/configuration and explicit same-dimension unit conversions
+   are implemented as user-proposed v2 project records; satisfying requirements,
+   non-scalar configuration, a general dependency graph and independent evidence
+   verification remain future gates. Snapshot and project-record flows
    passed E: MCP stdio handshakes on 2026-10-05 (see project-record-verification.md).
 
 ## Delivery sequence and gates
@@ -89,7 +91,7 @@ for the generic CAD development gates here. Do not mistake roadmap text for expo
 2. **Phase 1A - mesh CAD reasoning (complete):** bounded STL topology/entity queries and geometric metrics. Gate: deterministic closed/open mesh tests; unknown units remain explicit; no unsupported physical claims.
 3. **Phase 1B - native CAD reasoning (bounded implementation):** read-only FreeCAD document/model tree and BREP summaries, plus FCStd shape-to-shape separation and conditional solid intersection volume. FreeCAD 1.1.4 bundled Python on D: passed generic STEP/FCStd live fixtures; material properties, feature history from STEP, section views and general engineering clearance remain unavailable.
 4. **Phase 1C - CAD change transactions (in progress):** dedicated output root, hash manifest, parent-preserving box parameter edits, ancestor-only box rollback, reopen verification and dimension comparison; visually approved rendering and arbitrary source-copy edits/undo are not yet available.
-5. **Phase 2 - project and provenance core (initial slice in progress):** bounded hashed asset/CAD snapshots, generic typed project/evidence records, explicit direct source/subject links and staleness reporting implemented. Typed configuration/requirements, component/resource schemas, unit normalization, independent evidence verification and general revision change-impact graph remain to be built.
+5. **Phase 2 - project and provenance core (initial slice in progress):** bounded hashed asset/CAD snapshots, generic typed project/evidence records, proposed scalar requirements/configuration, explicit direct links, unit conversion and staleness reporting implemented. Requirement satisfaction, component/resource schemas, independent evidence verification and general revision change-impact graph remain to be built.
 6. **Phase 3 - component envelopes and assembly:** manufacturer-backed records, CAD/envelope links, assembly instances and fit/access/collision checks. Requires validated geometry and component data.
 7. **Phase 4 - engineering analysis:** mass/CG/inertia, electrical/power/wiring, propulsion test-data ingestion, thermal/vibration/structural methods. Each calculator has unit tests, explicit evidence status, and bounded applicability.
 8. **Phase 5 - electronics and manufacturing adapters:** KiCad inspection/validation/STEP mapping; drawing/BOM/wiring/manufacturing outputs and tolerance/DFM checks.

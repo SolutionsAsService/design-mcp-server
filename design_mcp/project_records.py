@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import math
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal, TypedDict
@@ -13,11 +13,14 @@ from uuid import uuid4
 from design_mcp.cad_write import MAX_MANIFEST_BYTES, MAX_REVISION_ENTRIES, REVISION_ID, _output_root
 from design_mcp.catalog import _inside, _root
 from design_mcp.project_snapshot import _digest, _load_snapshot, inspect_project_snapshot
+from design_mcp.units import UNIT_DEFINITIONS, normalize_quantity
 
 MAX_EVIDENCE = 20
+MAX_REQUIREMENTS = 20
+MAX_PARAMETERS = 20
 STATUSES = {"VERIFIED", "MANUFACTURER", "MEASURED", "CALCULATED",
             "ESTIMATED", "ASSUMED", "UNKNOWN"}
-UNITS = {"mm", "mm2", "mm3", "m", "g", "kg", "V", "A", "W", "Wh", "N"}
+UNITS = set(UNIT_DEFINITIONS)
 
 
 class EvidenceLink(TypedDict):
@@ -34,6 +37,26 @@ class EvidenceLink(TypedDict):
     unit: str | None
 
 
+class Requirement(TypedDict):
+    requirement_id: str
+    key: str
+    description: str
+    comparator: Literal["AT_MOST", "AT_LEAST", "EQUAL"]
+    quantity: dict
+    source_asset_path: str
+    source_sha256: str
+    status: str
+
+
+class ConfigurationParameter(TypedDict):
+    parameter_id: str
+    key: str
+    quantity: dict
+    source_asset_path: str
+    source_sha256: str
+    status: str
+
+
 @dataclass(frozen=True)
 class ProjectRecord:
     schema_version: int
@@ -46,6 +69,8 @@ class ProjectRecord:
     evidence: list[EvidenceLink]
     parent_project_id: str | None = None
     parent_manifest_sha256: str | None = None
+    requirements: list[Requirement] = field(default_factory=list)
+    configuration: list[ConfigurationParameter] = field(default_factory=list)
 
 
 def _write_project(root: Path, record: ProjectRecord) -> dict:
@@ -65,11 +90,18 @@ def _load_project(root: Path, project_id: str) -> dict:
         raise ValueError("Project record exceeds size limit.")
     payload = json.loads(path.read_text(encoding="utf-8"))
     digest = payload.pop("manifest_sha256", None)
-    if (payload.get("schema_version") != 1 or payload.get("project_id") != project_id
+    if (payload.get("schema_version") not in {1, 2} or payload.get("project_id") != project_id
             or not isinstance(digest, str) or digest != _digest(payload)):
         raise ValueError("Project record failed identity or hash validation.")
+    if payload["schema_version"] == 1:
+        payload["requirements"] = []
+        payload["configuration"] = []
     evidence = payload.get("evidence")
     if (not isinstance(evidence, list) or len(evidence) > MAX_EVIDENCE
+            or not isinstance(payload.get("requirements"), list)
+            or len(payload["requirements"]) > MAX_REQUIREMENTS
+            or not isinstance(payload.get("configuration"), list)
+            or len(payload["configuration"]) > MAX_PARAMETERS
             or not isinstance(payload.get("snapshot_id"), str)
             or not REVISION_ID.fullmatch(payload["snapshot_id"])
             or not isinstance(payload.get("snapshot_sha256"), str)
@@ -96,6 +128,26 @@ def _load_project(root: Path, project_id: str) -> dict:
                          or not isinstance(link["value"], (int, float))
                          or not math.isfinite(link["value"]) or link["unit"] not in UNITS))):
             raise ValueError("Project evidence has invalid structure.")
+    for kind, entries in (("requirement", payload["requirements"]),
+                          ("parameter", payload["configuration"])):
+        for item in entries:
+            identifier = item.get(f"{kind}_id") if isinstance(item, dict) else None
+            if (not isinstance(identifier, str) or not REVISION_ID.fullmatch(identifier)
+                    or not isinstance(item.get("key"), str)
+                    or not isinstance(item.get("source_asset_path"), str)
+                    or not isinstance(item.get("source_sha256"), str)
+                    or item.get("status") != "USER_PROPOSED_NOT_VALIDATED"):
+                raise ValueError("Project quantity record has invalid structure.")
+            if kind == "requirement" and (item.get("comparator") not in
+                                          {"AT_MOST", "AT_LEAST", "EQUAL"}
+                                          or not isinstance(item.get("description"), str)):
+                raise ValueError("Project requirement has invalid structure.")
+            quantity = item.get("quantity")
+            if not isinstance(quantity, dict):
+                raise ValueError("Project quantity is missing.")
+            expected = normalize_quantity(quantity.get("value"), quantity.get("unit"))
+            if (quantity != expected or not isinstance(quantity["canonical_value"], (int, float))):
+                raise ValueError("Project quantity normalization mismatch.")
     return {**payload, "manifest_sha256": digest}
 
 
@@ -117,7 +169,7 @@ def create_project_record(asset_root: str | Path, revision_root: str | Path,
     if assets == root:
         raise ValueError("Asset and revision roots must be distinct.")
     source = _snapshot(assets, root, snapshot_id)
-    record = ProjectRecord(1, uuid4().hex, name.strip(), description,
+    record = ProjectRecord(2, uuid4().hex, name.strip(), description,
                            snapshot_id, source["manifest_sha256"],
                            datetime.now(timezone.utc).isoformat(), [])
     return _write_project(root, record)
@@ -157,12 +209,68 @@ def add_project_evidence(asset_root: str | Path, revision_root: str | Path,
                           "claim": claim.strip(), "evidence_status": evidence_status,
                           "verification": "USER_ATTESTED_NOT_INDEPENDENTLY_CHECKED",
                           "value": float(value) if value is not None else None, "unit": unit}
-    record = ProjectRecord(1, uuid4().hex, parent["name"], parent["description"],
+    record = ProjectRecord(2, uuid4().hex, parent["name"], parent["description"],
                            parent["snapshot_id"], parent["snapshot_sha256"],
                            datetime.now(timezone.utc).isoformat(), parent["evidence"] + [link],
                            parent_project_id=project_id,
-                           parent_manifest_sha256=parent["manifest_sha256"])
+                           parent_manifest_sha256=parent["manifest_sha256"],
+                           requirements=parent["requirements"],
+                           configuration=parent["configuration"])
     return _write_project(root, record)
+
+
+def _append_quantity(asset_root: str | Path, revision_root: str | Path, project_id: str,
+                     key: str, source_asset_path: str, value: float, unit: str,
+                     kind: str, description: str = "", comparator: str = "") -> dict:
+    if (not isinstance(key, str) or not 1 <= len(key.strip()) <= 80
+            or not isinstance(source_asset_path, str)):
+        raise ValueError("Quantity key and source asset path are required.")
+    quantity = normalize_quantity(value, unit)
+    assets = _root(asset_root)
+    root = _output_root(revision_root)
+    parent = _load_project(root, project_id)
+    snapshot = _snapshot(assets, root, parent["snapshot_id"])
+    if snapshot["manifest_sha256"] != parent["snapshot_sha256"]:
+        raise ValueError("Project snapshot manifest changed.")
+    sources = {item["path"]: item["sha256"] for item in snapshot["assets"]}
+    if source_asset_path not in sources:
+        raise ValueError("Quantity source must be an asset in the project snapshot.")
+    items = parent["requirements"] if kind == "requirement" else parent["configuration"]
+    limit = MAX_REQUIREMENTS if kind == "requirement" else MAX_PARAMETERS
+    if len(items) >= limit or any(item["key"] == key.strip() for item in items):
+        raise ValueError("Quantity limit reached or key already exists in this project revision.")
+    entry = {f"{kind}_id": uuid4().hex, "key": key.strip(), "quantity": quantity,
+             "source_asset_path": source_asset_path, "source_sha256": sources[source_asset_path],
+             "status": "USER_PROPOSED_NOT_VALIDATED"}
+    if kind == "requirement":
+        if (not isinstance(description, str) or not 1 <= len(description.strip()) <= 256
+                or comparator not in {"AT_MOST", "AT_LEAST", "EQUAL"}):
+            raise ValueError("Requirement needs a short description and comparator.")
+        entry.update({"description": description.strip(), "comparator": comparator})
+    record = ProjectRecord(2, uuid4().hex, parent["name"], parent["description"],
+                           parent["snapshot_id"], parent["snapshot_sha256"],
+                           datetime.now(timezone.utc).isoformat(), parent["evidence"],
+                           parent_project_id=project_id,
+                           parent_manifest_sha256=parent["manifest_sha256"],
+                           requirements=parent["requirements"] + [entry] if kind == "requirement"
+                           else parent["requirements"],
+                           configuration=parent["configuration"] + [entry] if kind == "parameter"
+                           else parent["configuration"])
+    return _write_project(root, record)
+
+
+def add_project_requirement(asset_root: str | Path, revision_root: str | Path,
+                            project_id: str, key: str, description: str, comparator: str,
+                            value: float, unit: str, source_asset_path: str) -> dict:
+    return _append_quantity(asset_root, revision_root, project_id, key,
+                            source_asset_path, value, unit, "requirement", description, comparator)
+
+
+def add_project_parameter(asset_root: str | Path, revision_root: str | Path,
+                          project_id: str, key: str, value: float, unit: str,
+                          source_asset_path: str) -> dict:
+    return _append_quantity(asset_root, revision_root, project_id, key,
+                            source_asset_path, value, unit, "parameter")
 
 
 def inspect_project_record(asset_root: str | Path, revision_root: str | Path,
@@ -188,6 +296,13 @@ def inspect_project_record(asset_root: str | Path, revision_root: str | Path,
         relationships.append({"evidence_id": link["evidence_id"], "source": source,
                               "subject": subject, "status": "RECHECK" if source in impacted
                               or subject in impacted else "CONTENT_UNCHANGED_NOT_VERIFIED"})
+    for kind, entries in (("requirement", project["requirements"]),
+                          ("parameter", project["configuration"])):
+        for item in entries:
+            relationships.append({"item_id": item[f"{kind}_id"], "kind": kind,
+                                  "source": ("asset", item["source_asset_path"]),
+                                  "status": "RECHECK" if ("asset", item["source_asset_path"])
+                                  in impacted else "CONTENT_UNCHANGED_NOT_VALIDATED"})
     return {"project": project, "snapshot_status": result["status"],
             "relationships": relationships, "changes": result["changes"],
             "unknowns": result["unknowns"]}
@@ -215,7 +330,9 @@ def list_project_records(revision_root: str | Path, offset: int = 0, limit: int 
             page.append({"project_id": identifier, "status": "HASH_VERIFIED",
                          "name": record["name"], "snapshot_id": record["snapshot_id"],
                          "parent_project_id": record.get("parent_project_id"),
-                         "evidence_count": len(record["evidence"])})
+                         "evidence_count": len(record["evidence"]),
+                         "requirement_count": len(record["requirements"]),
+                         "parameter_count": len(record["configuration"])})
         except (OSError, ValueError, KeyError, TypeError, AttributeError):
             page.append({"project_id": identifier, "status": "INVALID"})
     return {"total": len(identifiers), "offset": offset, "limit": limit,

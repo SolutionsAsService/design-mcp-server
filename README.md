@@ -1,6 +1,6 @@
 # design-mcp-server
 
-A modular MCP engineering project. The current release provides a read-only asset catalog with opt-in generic FreeCAD revisions and bounded provenance snapshots; it is not a complete vehicle engineering platform.
+A modular MCP engineering project. The current release provides a read-only asset catalog with opt-in generic FreeCAD revisions, bounded provenance snapshots and immutable generic project records; it is not a complete vehicle engineering platform.
 
 ## Current tools
 
@@ -26,6 +26,9 @@ A modular MCP engineering project. The current release provides a read-only asse
 - `add_project_evidence(project_id, subject_kind, subject_reference, source_asset_path, claim, evidence_status, value=None, unit=None)` creates a new project record linked to its parent with a source-backed, user-attested claim about a snapshot asset or CAD revision.
 - `inspect_project_record(project_id)` rechecks immediate parent and snapshot hashes, then flags directly impacted evidence links for reinspection; it does not verify claims.
 - `list_project_records(offset=0, limit=10)` pages hash-checked project records.
+- `add_project_requirement(project_id, key, description, comparator, value, unit, source_asset_path)` appends an unvalidated `AT_MOST`, `AT_LEAST` or `EQUAL` scalar requirement to a **new** project revision.
+- `add_project_parameter(project_id, key, value, unit, source_asset_path)` appends a source-linked scalar configuration parameter in a new revision.
+- `convert_quantity(value, from_unit, to_unit)` converts supported, dimensionally compatible units without asserting the value is correct.
 - `get_scope()` reports the implemented boundary.
 - Resources: `design://project/assets`, `design://project/revisions`, `design://project/snapshots` and `design://project/records` (first page; requires an output root).
 
@@ -33,7 +36,9 @@ STL coordinates have unknown units. The mesh tool does not test self-intersectio
 
 Snapshot manifests retain content hashes and the requested references only: no typed requirements, component data, assembly claims, or dependency graph. Asset paths are confined to the configured root; output is confined to the revision root. A changed or missing reference is `STALE`; an unsafe/unreadable reference is `UNKNOWN`. The manifest hash detects accidental alteration within this trusted root, not malicious rewriting with a recomputed hash.
 
-Project records are append-only revisions with a name, description, snapshot link and up to 20 typed evidence links. Each link has a subject (`asset` or `cad_revision`), an existing source asset, a user-supplied claim/status and optional finite numeric value plus explicit unit (`mm`, `mm2`, `mm3`, `m`, `g`, `kg`, `V`, `A`, `W`, `Wh`, `N`). Even `VERIFIED` is **user-attested, not independently verified**. Direct source or subject changes yield `RECHECK`; no claim evaluation, unit conversion, dependency graph, requirement schema or engineering approval is implied. Do not write records from untrusted parties into the revision root.
+Project records are append-only revisions with a name, description, snapshot link and up to 20 typed evidence links. Each link has a subject (`asset` or `cad_revision`), an existing source asset, a user-supplied claim/status and optional finite numeric value plus explicit unit (`mm`, `mm2`, `mm3`, `m`, `g`, `kg`, `V`, `A`, `W`, `Wh`, `N`). Even `VERIFIED` is **user-attested, not independently verified**. Direct source or subject changes yield `RECHECK`; no claim evaluation, dependency graph or engineering approval is implied. Do not write records from untrusted parties into the revision root.
+
+Project record schema v2 also accepts up to 20 proposed scalar requirements and 20 configuration quantities, each tied to an asset in the same snapshot. Values retain input units and an explicit calculated canonical conversion (length m, area m2, volume m3, mass kg; V/A/W/Wh/N unchanged). No requirements are automatically checked; source changes mark directly linked entries `RECHECK`. Prior v1 project manifests remain readable and new edits make a v2 child without rewriting the v1 parent. No unit inference, dependency graph, CAD regeneration or independent evidence verification is provided.
 
 ## Setup
 

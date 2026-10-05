@@ -28,6 +28,9 @@ from design_mcp.project_records import create_project_record as write_project_re
 from design_mcp.project_records import add_project_evidence as write_project_evidence
 from design_mcp.project_records import inspect_project_record as read_project_record
 from design_mcp.project_records import list_project_records as read_project_records
+from design_mcp.project_records import add_project_requirement as write_requirement
+from design_mcp.project_records import add_project_parameter as write_parameter
+from design_mcp.units import convert_quantity as convert_scalar
 
 mcp = FastMCP("design-mcp-server")
 
@@ -204,6 +207,29 @@ def inspect_project_record(project_id: str) -> dict:
 def list_project_records(offset: int = 0, limit: int = 10) -> dict:
     """Page hash-checked immutable project records, not engineering approvals."""
     return read_project_records(_revision_root(), offset, limit)
+
+
+@mcp.tool()
+def add_project_requirement(project_id: str, key: str, description: str,
+                            comparator: str, value: float, unit: str,
+                            source_asset_path: str) -> dict:
+    """Append a source-linked, unvalidated scalar requirement as a new project revision."""
+    return write_requirement(_asset_root(), _revision_root(), project_id,
+                             key, description, comparator, value, unit, source_asset_path)
+
+
+@mcp.tool()
+def add_project_parameter(project_id: str, key: str, value: float,
+                          unit: str, source_asset_path: str) -> dict:
+    """Append a source-linked scalar configuration parameter in a new project revision."""
+    return write_parameter(_asset_root(), _revision_root(), project_id,
+                           key, value, unit, source_asset_path)
+
+
+@mcp.tool()
+def convert_quantity(value: float, from_unit: str, to_unit: str) -> dict:
+    """Convert a finite scalar between explicit compatible units; no claim verification."""
+    return convert_scalar(value, from_unit, to_unit)
 
 
 @mcp.tool()
