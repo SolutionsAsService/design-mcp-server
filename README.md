@@ -9,6 +9,7 @@ A modular MCP engineering project. The current release is a read-only project as
 - `inspect_stl_geometry(relative_path)` reports STL triangle topology, bounds, surface area, and only computes enclosed volume when the mesh is closed and consistently oriented.
 - `get_stl_entities(relative_path, entity, offset, limit)` pages faces, unique edges, or vertices.
 - `inspect_freecad_model(relative_path)` reads STEP BREP metrics or an FCStd model tree through FreeCAD's bundled Python (optional).
+- `measure_freecad_distance(relative_path, first_object, second_object)` finds minimum separation between two named FCStd shapes (optional FreeCAD runtime). Zero indicates contact **or** overlap, not verified clearance.
 - `get_scope()` reports the implemented boundary.
 - Resource: `design://project/assets`.
 
@@ -39,7 +40,7 @@ $env:TMP = $env:TEMP
 $env:FREECAD_USER_HOME = 'D:\New folder\OpenClaw\Apps\FreeCAD\user'
 ```
 
-Only `.step`, `.stp`, and `.fcstd` files within the configured asset root are accepted. The worker does not save files, but opening untrusted native CAD files through FreeCAD is not sandboxed; use trusted documents. Results are capped at 200 document objects and 60 seconds per inspection.
+Only `.step`, `.stp`, and `.fcstd` files within the configured asset root are accepted. Distance measurement requires `.fcstd` with two existing shape-bearing object names. The worker does not save files, but opening untrusted native CAD files through FreeCAD is not sandboxed; use trusted documents. Results are capped at 200 document objects, 10 closest point pairs, and 60 seconds per operation.
 
 ## Scope and roadmap
 

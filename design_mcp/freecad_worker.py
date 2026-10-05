@@ -59,5 +59,40 @@ def inspect(path):
         FreeCAD.closeDocument(document.Name)
 
 
+def measure_distance(path, first_name, second_name):
+    if not path.lower().endswith(".fcstd"):
+        raise ValueError("Distance measurement requires FCStd.")
+    document = FreeCAD.openDocument(path, True)
+    try:
+        first = document.getObject(first_name)
+        second = document.getObject(second_name)
+        if first is None or second is None or first == second:
+            raise ValueError("Two distinct existing document objects are required.")
+        if not hasattr(first, "Shape") or not hasattr(second, "Shape"):
+            raise ValueError("Both objects must have shapes.")
+        if first.Shape.isNull() or second.Shape.isNull():
+            raise ValueError("Both shapes must be non-null.")
+        distance, point_pairs, _ = first.Shape.distToShape(second.Shape)
+        return {
+            "format": "FCStd",
+            "objects": [first_name, second_name],
+            "minimum_distance_mm": distance,
+            "closest_points_mm": [[_vector(first_point), _vector(second_point)]
+                                  for first_point, second_point in point_pairs[:10]],
+            "closest_points_truncated": len(point_pairs) > 10,
+            "overlap_or_contact": distance == 0,
+            "note": "Zero distance includes touching and overlap; it does not distinguish them.",
+        }
+    finally:
+        FreeCAD.closeDocument(document.Name)
+
+
 if __name__ == "__main__":
-    print("DESIGN_MCP_RESULT=" + json.dumps(inspect(sys.argv[1]), allow_nan=False))
+    operation = sys.argv[2] if len(sys.argv) > 2 else "inspect"
+    if operation == "inspect" and len(sys.argv) == 3:
+        result = inspect(sys.argv[1])
+    elif operation == "distance" and len(sys.argv) == 5:
+        result = measure_distance(sys.argv[1], sys.argv[3], sys.argv[4])
+    else:
+        raise ValueError("Unsupported worker operation or argument count.")
+    print("DESIGN_MCP_RESULT=" + json.dumps(result, allow_nan=False))

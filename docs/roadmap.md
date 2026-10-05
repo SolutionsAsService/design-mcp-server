@@ -41,11 +41,43 @@ Build a modular MCP engineering system for civilian aircraft and other mechanica
 - Maintain test plans/results, design decisions, open issues, validation reports, CAD/engineering resources, MCP resources/prompts, revision history, manufacturing/DFM checks, BOM/wiring/assembly instructions, and reproducible build packages.
 - Propagate engineering changes: identify impacted CAD, mass/CG, power/wiring, propulsion, simulation, BOM, validation, and retests; mark stale results rather than presenting them as current.
 
+## Full design-MCP architecture (planned, not implemented)
+
+The durable state should be a project manifest referencing immutable source assets, revisions,
+evidence records, and validation runs. Independent adapters should expose capabilities rather
+than silently substitute a different CAD kernel, solver, or data source. The API should expose
+structured status (`AVAILABLE`, `CONFIGURATION_REQUIRED`, `UNAVAILABLE`) for each adapter.
+
+| Layer | Planned responsibility | Acceptance gate |
+| --- | --- | --- |
+| Project and provenance | Stable IDs, source URLs/hashes, measured vs derived values, explicit units, revision snapshots | Reopen a revision and reconstruct its evidence without conversational state |
+| CAD and geometry | FreeCAD/STEP topology, bounded measurements, immutable edit transactions, render and reinspection | Original preserved; updated model reopens, measurements and preview match revision |
+| Assembly and components | Hierarchies, instances, sourced envelopes, attachment interfaces, tolerance-aware fit | Missing dimensions yield UNKNOWN, never a fabricated pass |
+| Electronics | KiCad read/validate, traceable board model and neutral-format exchange | ERC/DRC outputs and imported geometry retain source revision |
+| Generic analysis | Mass properties only with known units/materials, structural/thermal solver adapters | Inputs and applicability bounded; calculations reproducible |
+| Validation and delivery | Evidence-linked findings, staleness propagation, export manifests | Changing a source invalidates all affected derived results |
+
+The long-range request also mentions aircraft-specific propulsion, power architecture,
+autopilot, SITL/HITL, flight-log analysis, and flight build packages. These are **not**
+implemented or promised by the present static-design server; they are not prerequisites
+for the generic CAD development gates here. Do not mistake roadmap text for exposed tools.
+
+### Next generic CAD milestones
+
+1. Prove STEP and FCStd inspection against actual fixtures on the target Windows runtime.
+2. Add bounded FCStd shape-to-shape separation (this increment); distinguish zero separation
+   from actual overlap and explicitly report unsupported inference.
+3. Add read-only BREP entity paging and section/preview export to a controlled scratch directory,
+   retaining source hashes and strict resource limits.
+4. Implement opt-in *copy-on-write* parameter edits in an isolated output root with atomic saves,
+   revision manifest, reopen/check, preview and rollback; never mutate the source by default.
+5. Add project/provenance manifests and change-impact tracking before component or assembly claims.
+
 ## Delivery sequence and gates
 
 1. **Phase 0 - MCP foundation (complete):** stdio server, configured read-only root, safe path resolution, SHA-256, file/container checks, unit tests.
-2. **Phase 1A - mesh CAD reasoning (this increment):** bounded STL topology/entity queries and geometric metrics. Gate: deterministic closed/open mesh tests; unknown units remain explicit; no unsupported physical claims.
-3. **Phase 1B - native CAD reasoning (next):** inspect FreeCAD document/model tree, BREP topology, placement, units, and basic measurements using an installed and version-verified FreeCAD API. The current target node has no discoverable FreeCAD executable; do not claim or code against an unverified API. STEP geometry is currently hashed only.
+2. **Phase 1A - mesh CAD reasoning (complete):** bounded STL topology/entity queries and geometric metrics. Gate: deterministic closed/open mesh tests; unknown units remain explicit; no unsupported physical claims.
+3. **Phase 1B - native CAD reasoning (in progress):** read-only FreeCAD document/model tree and BREP summaries, plus FCStd shape-to-shape separation. FreeCAD 1.1.4 bundled Python was verified on D:; real-file integration tests are still required before claiming live validation.
 4. **Phase 1C - CAD change transactions:** branch/copy a document, parameter edits, revision snapshots, re-open/render/measure/compare, rollback on failure. Depends on Phase 1B.
 5. **Phase 2 - project and provenance core:** typed project/configuration/requirements, component and resource schemas, unit normalization, confidence/provenance, revision and change-impact graph.
 6. **Phase 3 - component envelopes and assembly:** manufacturer-backed records, CAD/envelope links, assembly instances and fit/access/collision checks. Requires validated geometry and component data.
@@ -56,7 +88,7 @@ Build a modular MCP engineering system for civilian aircraft and other mechanica
 
 ## Current blockers and next checks
 
-- FreeCAD is not installed or discoverable on the Windows node. Verify candidate supported versions and installation location before implementing the native adapter. Do not invent API calls.
-- STEP is hashed only. Native feature trees, BREP topology, physical units, material, mass properties, and CAD modification are not available.
+- FreeCAD 1.1.4 is installed on D:, but its adapter still needs an approved live test on actual STEP and FCStd files.
+- STEP shape summaries are implemented; native feature trees, material, physical mass properties, and CAD modification are not available.
 - No verified drone project/component dataset is bundled; the tools must not fabricate example manufacturer specifications.
 - End-to-end CAD edit/render/inspect/rollback is a future acceptance gate, not a current capability.

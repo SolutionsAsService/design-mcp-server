@@ -11,6 +11,7 @@ from design_mcp.catalog import list_assets as list_files
 from design_mcp.geometry import get_stl_entities as read_stl_entities
 from design_mcp.geometry import inspect_stl_geometry as inspect_stl
 from design_mcp.freecad import inspect_freecad as read_freecad
+from design_mcp.freecad import measure_freecad_distance as read_freecad_distance
 
 mcp = FastMCP("design-mcp-server")
 
@@ -56,6 +57,12 @@ def inspect_freecad_model(relative_path: str) -> dict:
 
 
 @mcp.tool()
+def measure_freecad_distance(relative_path: str, first_object: str, second_object: str) -> dict:
+    """Measure the nearest separation between two named FCStd shapes, without modifying the document."""
+    return read_freecad_distance(_asset_root(), relative_path, first_object, second_object)
+
+
+@mcp.tool()
 def get_scope() -> dict:
     """Describe implemented capabilities and fixed read-only boundaries."""
     return {
@@ -63,7 +70,7 @@ def get_scope() -> dict:
         "network": False,
         "subprocess": "FreeCAD bundled Python only, when configured",
         "writes": False,
-        "geometry_formats": ["STL triangulated surface mesh", "STEP BREP via FreeCAD", "FCStd feature tree via FreeCAD"],
+        "geometry_formats": ["STL triangulated surface mesh", "STEP BREP via FreeCAD", "FCStd feature tree and shape distance via FreeCAD"],
         "coordinate_units": "Unknown for STL; the format contains no unit metadata.",
         "self_intersection_test": False,
         "vehicle_analysis": False,
