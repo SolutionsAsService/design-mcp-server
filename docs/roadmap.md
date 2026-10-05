@@ -85,6 +85,10 @@ for the generic CAD development gates here. Do not mistake roadmap text for expo
    verification remain future gates. Snapshot and project-record flows
    passed E: MCP stdio handshakes on 2026-10-05; the v2 quantity flow passed on
    2026-10-05 as well (see quantity-verification.md).
+6. Add conservative read-only FCStd envelope-pair checks as the first assembly
+   geometry slice. Missing/overlapping AABBs must stay UNKNOWN. Manufacturer-backed
+   component records, placements/constraints and tolerance-aware fit still require
+   trusted source data and separate acceptance tests.
 
 ## Delivery sequence and gates
 
@@ -93,7 +97,7 @@ for the generic CAD development gates here. Do not mistake roadmap text for expo
 3. **Phase 1B - native CAD reasoning (bounded implementation):** read-only FreeCAD document/model tree and BREP summaries, plus FCStd shape-to-shape separation and conditional solid intersection volume. FreeCAD 1.1.4 bundled Python on D: passed generic STEP/FCStd live fixtures; material properties, feature history from STEP, section views and general engineering clearance remain unavailable.
 4. **Phase 1C - CAD change transactions (in progress):** dedicated output root, hash manifest, parent-preserving box parameter edits, ancestor-only box rollback, reopen verification and dimension comparison; visually approved rendering and arbitrary source-copy edits/undo are not yet available.
 5. **Phase 2 - project and provenance core (initial slice in progress):** bounded hashed asset/CAD snapshots, generic typed project/evidence records, proposed scalar requirements/configuration, explicit direct links, unit conversion and staleness reporting implemented. Requirement satisfaction, component/resource schemas, independent evidence verification and general revision change-impact graph remain to be built.
-6. **Phase 3 - component envelopes and assembly:** manufacturer-backed records, CAD/envelope links, assembly instances and fit/access/collision checks. Requires validated geometry and component data.
+6. **Phase 3 - component envelopes and assembly (initial slice in progress):** bounded read-only FCStd object AABB separation is implemented; manufacturer-backed records, CAD/envelope links, instance/constraint representation and tolerance-aware fit/access/collision checks remain gated on validated geometry and component data.
 7. **Phase 4 - engineering analysis:** mass/CG/inertia, electrical/power/wiring, propulsion test-data ingestion, thermal/vibration/structural methods. Each calculator has unit tests, explicit evidence status, and bounded applicability.
 8. **Phase 5 - electronics and manufacturing adapters:** KiCad inspection/validation/STEP mapping; drawing/BOM/wiring/manufacturing outputs and tolerance/DFM checks.
 9. **Phase 6 - simulation and logs:** choose one maintained SITL stack after toolchain verification; connect model state, mass/CG/inertia and propulsion data; log ingestion and analysis.
@@ -102,6 +106,7 @@ for the generic CAD development gates here. Do not mistake roadmap text for expo
 ## Current blockers and next checks
 
 - FreeCAD 1.1.4 on D: passed real STEP/FCStd generic fixture inspection, BREP face paging, and separated/touching/overlapping box checks on 2026-10-05 (see native-cad-verification.md); arbitrary real assemblies and visual previews remain unverified.
-- STEP shape summaries and bounded BREP paging are implemented; native feature histories, material and physical mass properties are unavailable, and CAD editing is limited to generated parametric boxes.
+- STEP shape summaries and bounded BREP paging are implemented; FCStd object-envelope checks do not establish physical fit. Native feature histories, material and physical mass properties are unavailable, and CAD editing is limited to generated parametric boxes.
+- `kicad-cli` was not discoverable on the target Windows node PATH during this increment; KiCad ERC/DRC, PCB geometry exchange and a local electronics adapter are not yet proven. A separately exposed KiCad MCP does not by itself establish this project's CLI integration.
 - No verified drone project/component dataset is bundled; the tools must not fabricate example manufacturer specifications.
 - End-to-end CAD edit/render/inspect/rollback is a future acceptance gate, not a current capability. Generic box creation, parent-preserving edit/reinspection, ancestor-only box rollback, and a hash-linked SVG wireframe export passed live FreeCAD fixture tests on 2026-10-05 (see rollback-verification.md). The preview was not visually reviewed; hidden surfaces and sections are not handled.

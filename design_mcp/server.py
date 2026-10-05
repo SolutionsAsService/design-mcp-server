@@ -31,6 +31,7 @@ from design_mcp.project_records import list_project_records as read_project_reco
 from design_mcp.project_records import add_project_requirement as write_requirement
 from design_mcp.project_records import add_project_parameter as write_parameter
 from design_mcp.units import convert_quantity as convert_scalar
+from design_mcp.assembly import inspect_cad_envelopes as read_envelopes
 
 mcp = FastMCP("design-mcp-server")
 
@@ -112,6 +113,13 @@ def get_freecad_entities(relative_path: str, entity: str, object_name: str = "",
                          offset: int = 0, limit: int = 25) -> dict:
     """Page bounded STEP/FCStd BREP entity measurements (not a manufacturing validation)."""
     return read_freecad_entities(_asset_root(), relative_path, entity, object_name, offset, limit)
+
+
+@mcp.tool()
+def inspect_cad_envelopes(relative_path: str, object_names: list[str],
+                          minimum_gap_mm: float = 0) -> dict:
+    """Check bounded FCStd object AABBs; missing/overlapping envelopes remain UNKNOWN."""
+    return read_envelopes(_asset_root(), relative_path, object_names, minimum_gap_mm)
 
 
 @mcp.tool()
