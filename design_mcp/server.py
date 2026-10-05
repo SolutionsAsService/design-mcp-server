@@ -8,6 +8,8 @@ from mcp.server.fastmcp import FastMCP
 
 from design_mcp.catalog import inspect_asset as inspect_file
 from design_mcp.catalog import list_assets as list_files
+from design_mcp.geometry import get_stl_entities as read_stl_entities
+from design_mcp.geometry import inspect_stl_geometry as inspect_stl
 
 mcp = FastMCP("design-mcp-server")
 
@@ -35,14 +37,28 @@ def inspect_asset(relative_path: str) -> dict:
 
 
 @mcp.tool()
+def inspect_stl_geometry(relative_path: str) -> dict:
+    """Calculate topology and geometric metrics for a triangulated STL mesh."""
+    return inspect_stl(_asset_root(), relative_path)
+
+
+@mcp.tool()
+def get_stl_entities(relative_path: str, entity: str = "faces", offset: int = 0, limit: int = 100) -> dict:
+    """Return a bounded page of STL triangle faces, unique edges, or unique vertices."""
+    return read_stl_entities(_asset_root(), relative_path, entity, offset, limit)
+
+
+@mcp.tool()
 def get_scope() -> dict:
-    """Describe the fixed read-only capability boundary."""
+    """Describe implemented capabilities and fixed read-only boundaries."""
     return {
-        "mode": "READ_ONLY_ASSET_CATALOG",
+        "mode": "READ_ONLY_ASSET_CATALOG_AND_STL_GEOMETRY",
         "network": False,
         "subprocess": False,
         "writes": False,
-        "geometry_measurement": False,
+        "geometry_formats": ["STL triangulated surface mesh"],
+        "coordinate_units": "Unknown for STL; the format contains no unit metadata.",
+        "self_intersection_test": False,
         "vehicle_analysis": False,
         "container_checks": [".stl", ".gltf", ".glb", ".3mf", ".fcstd"],
         "hashed_only": [".step", ".stp", "other"],

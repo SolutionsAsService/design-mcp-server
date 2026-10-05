@@ -1,14 +1,17 @@
 # design-mcp-server
 
-Read-only MCP for inventorying project files and checking basic container integrity for static CAD assets. It is generic and does not model or validate a vehicle, aircraft, component fit, or flight system.
+A modular MCP engineering project. The current release is a read-only project asset catalog with bounded CAD mesh reasoning; it is the first increment, not the complete drone engineering platform.
 
-## Scope
+## Current tools
 
-Tools list files beneath one configured root, report metadata and SHA-256, and run limited format checks for STL, glTF/GLB, 3MF, and FreeCAD FCStd. STEP/ STP files are hashed only.
+- `list_assets(relative_directory=".")` inventories files beneath one configured root.
+- `inspect_asset(relative_path)` hashes a file and checks limited STL, glTF/GLB, 3MF, and FCStd container structure.
+- `inspect_stl_geometry(relative_path)` reports STL triangle topology, bounds, surface area, and only computes enclosed volume when the mesh is closed and consistently oriented.
+- `get_stl_entities(relative_path, entity, offset, limit)` pages faces, unique edges, or vertices.
+- `get_scope()` reports the implemented boundary.
+- Resource: `design://project/assets`.
 
-No CAD authoring, dimensions, fit/clearance checks, manufacturing advice, component databases, electrical/power/propulsion analysis, mass/CG, control/navigation, simulation, hardware, or flight-test tools are included. No network, subprocess, arbitrary path, or write operations are exposed.
-
-STRUCTURE_VALID means only that supported container checks passed. It is not engineering validation.
+STL coordinates have unknown units. The mesh tool does not test self-intersections, infer materials, or validate engineering suitability. STEP files are hashed only. No CAD authoring, vehicle engineering, electrical, propulsion, simulation, physical-hardware, or flight-test commands are available yet.
 
 ## Setup
 
@@ -24,9 +27,6 @@ $env:DESIGN_MCP_ASSET_ROOT = "E:\path\to\assets"
 
 The root must exist. The MCP uses stdio. Run tests with `python -m unittest discover -s tests -v`.
 
-## MCP surface
+## Scope and roadmap
 
-Tools: `list_assets(relative_directory=".")`, `inspect_asset(relative_path)`, `get_scope()`.
-Resource: `design://project/assets`.
-
-See `docs/scope.md` for limits and integrity semantics.
+See [docs/scope.md](docs/scope.md) and [docs/roadmap.md](docs/roadmap.md) for the full requested product scope, implementation status, dependencies, and phase gates.
