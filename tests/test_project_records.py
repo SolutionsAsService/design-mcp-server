@@ -77,6 +77,16 @@ class ProjectRecordTests(unittest.TestCase):
                 self._evidence(initial["project_id"], **override)
         self.assertEqual(list_project_records(self.revisions)["total"], 1)
 
+    def test_changed_cad_subject_flags_only_direct_link(self) -> None:
+        initial = self._project()
+        updated = self._evidence(initial["project_id"])
+        self.model.write_bytes(b"different model")
+        report = inspect_project_record(self.assets, self.revisions, updated["project_id"])
+        self.assertEqual(report["snapshot_status"], "STALE")
+        self.assertEqual(report["relationships"][0]["subject"],
+                         ("cad_revision", self.revision_id))
+        self.assertEqual(report["relationships"][0]["status"], "RECHECK")
+
     def test_parent_and_snapshot_hash_mismatch_fail_closed(self) -> None:
         initial = self._project()
         updated = self._evidence(initial["project_id"])

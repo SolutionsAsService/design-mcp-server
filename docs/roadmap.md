@@ -80,8 +80,8 @@ for the generic CAD development gates here. Do not mistake roadmap text for expo
    immutable typed generic project/evidence records now link claims to existing snapshot
    assets or CAD revisions, preserving explicit units and user-attested statuses.
    A general dependency graph, typed requirements/configuration and independent
-   evidence verification remain future gates. The snapshot passed an E: MCP stdio
-   handshake on 2026-10-05; project-record live verification is pending.
+   evidence verification remain future gates. Snapshot and project-record flows
+   passed E: MCP stdio handshakes on 2026-10-05 (see project-record-verification.md).
 
 ## Delivery sequence and gates
 
