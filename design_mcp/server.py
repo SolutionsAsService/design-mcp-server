@@ -32,6 +32,12 @@ from design_mcp.project_records import add_project_requirement as write_requirem
 from design_mcp.project_records import add_project_parameter as write_parameter
 from design_mcp.units import convert_quantity as convert_scalar
 from design_mcp.assembly import inspect_cad_envelopes as read_envelopes
+from design_mcp.component_links import register_component_candidate as write_candidate
+from design_mcp.component_links import inspect_component_candidate as read_candidate
+from design_mcp.component_links import list_component_candidates as read_candidates
+from design_mcp.component_links import create_assembly_manifest as write_assembly
+from design_mcp.component_links import inspect_assembly_manifest as read_assembly
+from design_mcp.component_links import list_assembly_manifests as read_assemblies
 
 mcp = FastMCP("design-mcp-server")
 
@@ -120,6 +126,42 @@ def inspect_cad_envelopes(relative_path: str, object_names: list[str],
                           minimum_gap_mm: float = 0) -> dict:
     """Check bounded FCStd object AABBs; missing/overlapping envelopes remain UNKNOWN."""
     return read_envelopes(_asset_root(), relative_path, object_names, minimum_gap_mm)
+
+
+@mcp.tool()
+def register_component_candidate(part_output: dict, footprint_output: dict) -> dict:
+    """Store caller-forwarded pcbparts/KiCad observations; pairing remains UNVERIFIED."""
+    return write_candidate(_revision_root(), part_output, footprint_output)
+
+
+@mcp.tool()
+def inspect_component_candidate(candidate_id: str) -> dict:
+    """Verify candidate record hash, not dimensions, pad mapping or part compatibility."""
+    return read_candidate(_revision_root(), candidate_id)
+
+
+@mcp.tool()
+def list_component_candidates(offset: int = 0, limit: int = 10) -> dict:
+    """Page recorded candidate identifiers and unverified footprint links."""
+    return read_candidates(_revision_root(), offset, limit)
+
+
+@mcp.tool()
+def create_assembly_manifest(name: str, instances: list[dict]) -> dict:
+    """Record a bounded candidate hierarchy and user positions, with no fit claims."""
+    return write_assembly(_revision_root(), name, instances)
+
+
+@mcp.tool()
+def inspect_assembly_manifest(assembly_id: str) -> dict:
+    """Recheck candidate links; absent component envelopes always imply UNKNOWN fit."""
+    return read_assembly(_revision_root(), assembly_id)
+
+
+@mcp.tool()
+def list_assembly_manifests(offset: int = 0, limit: int = 10) -> dict:
+    """Page bounded assembly hierarchies; hashes are not physical-fit validation."""
+    return read_assemblies(_revision_root(), offset, limit)
 
 
 @mcp.tool()
@@ -247,7 +289,7 @@ def get_scope() -> dict:
         "mode": "READ_ONLY_ASSET_CATALOG_WITH_OPT_IN_CAD_REVISIONS",
         "network": False,
         "subprocess": "FreeCAD bundled Python only, when configured",
-        "writes": "new generic FCStd revisions, bounded snapshot/project records and SVG previews only with configured output roots",
+        "writes": "new generic FCStd revisions, bounded snapshot/project/candidate/assembly records and SVG previews only with configured output roots",
         "geometry_formats": ["STL triangulated surface mesh", "STEP BREP via FreeCAD", "FCStd feature tree and shape distance via FreeCAD"],
         "coordinate_units": "Unknown for STL; the format contains no unit metadata.",
         "self_intersection_test": False,
@@ -285,6 +327,22 @@ def project_records() -> str:
     if not os.environ.get("DESIGN_MCP_REVISION_ROOT"):
         return json.dumps({"status": "CONFIGURATION_REQUIRED", "projects": []})
     return json.dumps(read_project_records(_revision_root()), sort_keys=True)
+
+
+@mcp.resource("design://components/candidates")
+def component_candidates() -> str:
+    """Return a bounded candidate page or configuration required; never implies part fit."""
+    if not os.environ.get("DESIGN_MCP_REVISION_ROOT"):
+        return json.dumps({"status": "CONFIGURATION_REQUIRED", "candidates": []})
+    return json.dumps(read_candidates(_revision_root()), sort_keys=True)
+
+
+@mcp.resource("design://assembly/manifests")
+def assembly_manifests() -> str:
+    """Return bounded assembly hierarchy summaries or configuration required."""
+    if not os.environ.get("DESIGN_MCP_REVISION_ROOT"):
+        return json.dumps({"status": "CONFIGURATION_REQUIRED", "assemblies": []})
+    return json.dumps(read_assemblies(_revision_root()), sort_keys=True)
 
 
 def main() -> None:

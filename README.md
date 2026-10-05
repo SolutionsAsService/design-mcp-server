@@ -11,6 +11,9 @@ A modular MCP engineering project. The current release provides a read-only asse
 - `inspect_freecad_model(relative_path)` reads STEP BREP metrics or an FCStd model tree through FreeCAD's bundled Python (optional).
 - `get_freecad_entities(relative_path, entity, object_name="", offset=0, limit=25)` pages BREP faces, edges, vertices, shells and solids. FCStd requires an object name; STEP does not. Maximum 50 records.
 - `inspect_cad_envelopes(relative_path, object_names, minimum_gap_mm=0)` reads up to eight named FCStd object bounds, returns pairwise AABB separation lower bounds and source SHA-256. Missing bounds and intersecting boxes return `UNKNOWN`, not a collision or fit verdict.
+- `register_component_candidate(part_output, footprint_output)` stores bounded caller-forwarded outputs shaped like `pcbparts.jlc_get_part` and a single result from `kicad.library.search`, without certifying their pairing or dimensions.
+- `inspect_component_candidate(candidate_id)` and `list_component_candidates(offset=0, limit=10)` hash-check stored candidates and report missing envelope/compatibility as UNKNOWN.
+- `create_assembly_manifest(name, instances)` records up to 20 candidate instances, finite mm positions and parent hierarchy; `inspect_assembly_manifest(assembly_id)` checks references but always reports fit UNKNOWN without source-backed envelopes. `list_assembly_manifests` pages hierarchy summaries.
 - `measure_freecad_distance(relative_path, first_object, second_object)` finds minimum separation between two named FCStd shapes (optional FreeCAD runtime). For valid closed solids at zero distance it also reports boolean intersection volume: positive volume identifies volumetric overlap; zero volume does **not** distinguish contact from numerical coincidence. Non-solids or failed booleans report an unknown relationship, not verified clearance.
 - `create_box_revision(length_mm, width_mm, height_mm)` creates a new parametric FCStd box and a hash/provenance manifest under a separate, explicitly configured revision root; never modifies an input file.
 - `inspect_cad_revision(revision_id)` verifies the saved hash and reinspects the FCStd model.
@@ -31,7 +34,7 @@ A modular MCP engineering project. The current release provides a read-only asse
 - `add_project_parameter(project_id, key, value, unit, source_asset_path)` appends a source-linked scalar configuration parameter in a new revision.
 - `convert_quantity(value, from_unit, to_unit)` converts supported, dimensionally compatible units without asserting the value is correct.
 - `get_scope()` reports the implemented boundary.
-- Resources: `design://project/assets`, `design://project/revisions`, `design://project/snapshots` and `design://project/records` (first page; requires an output root).
+- Resources: `design://project/assets`, `design://project/revisions`, `design://project/snapshots`, `design://project/records`, `design://components/candidates` and `design://assembly/manifests` (first page; the latter five require an output root).
 
 STL coordinates have unknown units. The mesh tool does not test self-intersections, infer materials, or validate engineering suitability. FreeCAD uses millimetres internally for STEP/FCStd geometry; no material or mass is inferred. Box creation and copy-on-write box edits are the only CAD authoring operations; they do not validate manufacture or physical fit. No vehicle engineering, electrical, propulsion, simulation, physical-hardware, or flight-test commands are available.
 
@@ -69,6 +72,8 @@ $env:FREECAD_USER_HOME = 'D:\New folder\OpenClaw\Apps\FreeCAD\user'
 Only `.step`, `.stp`, and `.fcstd` files within the configured asset root are accepted for inspection. Distance measurement requires `.fcstd` with two existing shape-bearing object names. Entity pages are geometric records, not drawings or assembly validation. Inspection does not save files, but opening untrusted native CAD files through FreeCAD is not sandboxed; use trusted documents. Results are capped at 200 document objects, 10 closest point pairs, and 60 seconds per operation.
 
 The FCStd envelope tool uses existing document object bounds and tree parents. A positive AABB gap is a conservative geometric distance lower bound; an overlapping AABB or missing shape has **UNKNOWN** fit/collision status. This is not a manufacturer-sourced component envelope, instance/constraint model, tolerance analysis, or design approval. Reinspect the source if its returned SHA-256 changes.
+
+External MCP outputs enter through an explicit caller handoff: the design server never calls other MCP servers, looks up stock or places orders itself. Candidate records hash the forwarded payloads and label them unauthenticated; the footprint pairing and pin map remain unverified. Assembly manifests do not add dimensions, CAD geometry, connector access or validated fit. See [docs/integration-plan.md](docs/integration-plan.md) for the guarded coordination workflow.
 
 ### Opt-in generic CAD revisions
 
