@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
-import json
-import math
-import sys
-
+# Import FreeCAD before anything else: on FreeCAD 26.x (conda-forge build) the first
+# `import FreeCAD` runs its init scripts in __main__ and replaces this script's globals,
+# so stdlib modules imported earlier (json, math, sys) vanish and the worker fails with
+# NameError. Only the first import does this; everything bound afterwards survives.
 import FreeCAD
 import Part
+
+import json  # noqa: E402  (must follow the FreeCAD import, see above)
+import math  # noqa: E402
+import sys  # noqa: E402
 
 
 def _vector(vector):
